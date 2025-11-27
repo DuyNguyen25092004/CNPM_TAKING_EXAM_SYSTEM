@@ -94,51 +94,8 @@ Tạo composite index cho collection `submissions`:
 
 Hoặc click vào link được cung cấp trong error message khi chạy app lần đầu.
 
-## Cài đặt
 
-### 1. Clone repository
-
-```bash
-git clone <repository-url>
-cd student-quiz-app
-```
-
-### 2. Cài đặt dependencies
-
-```bash
-flutter pub get
-```
-
-### 3. Cấu hình Firebase
-
-#### Android
-1. Tạo Firebase project tại https://console.firebase.google.com
-2. Thêm Android app vào project
-3. Download file `google-services.json`
-4. Đặt vào `android/app/google-services.json`
-5. Cập nhật `android/build.gradle`:
-```gradle
-dependencies {
-    classpath 'com.google.gms:google-services:4.3.15'
-}
-```
-6. Cập nhật `android/app/build.gradle`:
-```gradle
-apply plugin: 'com.google.gms.google-services'
-```
-
-#### iOS
-1. Thêm iOS app vào Firebase project
-2. Download file `GoogleService-Info.plist`
-3. Đặt vào `ios/Runner/GoogleService-Info.plist`
-
-### 4. Khởi tạo Firestore
-
-Vào Firebase Console > Firestore Database > Create Database
-- Chọn region phù hợp
-- Start in production mode (hoặc test mode cho development)
-
-### 5. Chạy ứng dụng
+### Chạy ứng dụng
 
 ```bash
 flutter run
