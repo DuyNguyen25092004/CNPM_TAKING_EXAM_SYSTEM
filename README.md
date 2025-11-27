@@ -65,7 +65,6 @@ quiz/
 │   ├── questionCount: number
 │   ├── duration: number (phút)
 │   ├── status: string ("available" | "archived")
-│   ├── createdAt: timestamp
 │   └── questions/ (subcollection)
 │       └── {questionId}/
 │           ├── question: string
