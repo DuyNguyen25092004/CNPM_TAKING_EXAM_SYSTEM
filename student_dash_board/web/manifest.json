@@ -1,6 +1,6 @@
 {
-    "name": "student_dash_board",
-    "short_name": "student_dash_board",
+    "name": "new_student_dash_board",
+    "short_name": "new_student_dash_board",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

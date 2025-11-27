@@ -1,4 +1,4 @@
-# student_dash_board
+# new_student_dash_board
 
 A new Flutter project.
 
