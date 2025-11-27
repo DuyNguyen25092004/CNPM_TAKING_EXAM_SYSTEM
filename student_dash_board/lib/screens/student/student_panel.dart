@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 import 'dashboard_page.dart';
 import 'quiz_list_page.dart';
-import 'submit_quiz_page.dart';
+// import 'submit_quiz_page.dart';
 import 'history_page.dart';
 
 class StudentPanel extends StatefulWidget {
