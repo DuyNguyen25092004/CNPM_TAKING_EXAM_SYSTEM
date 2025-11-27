@@ -1,18 +1,17 @@
-// lib/screens/student/student_panel.dart
+// lib/screens/student/student_panel.dart (Updated with Analytics)
 import 'package:flutter/material.dart';
+
 import '../../utils/constants.dart';
+import 'analytics_page.dart';
 import 'dashboard_page.dart';
+import 'history_page.dart';
 import 'quiz_list_page.dart';
 import 'submit_quiz_page.dart';
-import 'history_page.dart';
 
 class StudentPanel extends StatefulWidget {
   final String studentId;
 
-  const StudentPanel({
-    Key? key,
-    required this.studentId,
-  }) : super(key: key);
+  const StudentPanel({Key? key, required this.studentId}) : super(key: key);
 
   @override
   State<StudentPanel> createState() => StudentPanelState();
@@ -31,6 +30,7 @@ class StudentPanelState extends State<StudentPanel> {
       QuizListPage(studentId: widget.studentId),
       const SubmitQuizPage(),
       HistoryPage(studentId: widget.studentId),
+      AnalyticsPage(studentId: widget.studentId),
     ];
   }
 
@@ -71,6 +71,10 @@ class StudentPanelState extends State<StudentPanel> {
           NavigationDestination(
             icon: Icon(AppConstants.historyIcon),
             label: AppStrings.history,
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.analytics),
+            label: 'Phân tích',
           ),
         ],
       ),

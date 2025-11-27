@@ -1,7 +1,5 @@
-// lib/services/firebase_service.dart
+// lib/services/firebase_service.dart (Updated with anti-cheat support)
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/quiz_model.dart';
-import '../models/submission_model.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -49,7 +47,10 @@ class FirebaseService {
   }
 
   // Stream recent submissions (for dashboard)
-  static Stream<QuerySnapshot> getRecentSubmissions(String studentId, {int limit = 5}) {
+  static Stream<QuerySnapshot> getRecentSubmissions(
+    String studentId, {
+    int limit = 5,
+  }) {
     return _firestore
         .collection('submissions')
         .where('studentId', isEqualTo: studentId)
@@ -63,8 +64,8 @@ class FirebaseService {
     return _firestore.collection('submissions').doc(submissionId).get();
   }
 
-  // Submit quiz answers
-  static Future<void> submitQuiz({
+  // Submit quiz answers (returns DocumentReference for anti-cheat update)
+  static Future<DocumentReference> submitQuiz({
     required String studentId,
     required String quizId,
     required String quizTitle,
@@ -104,8 +105,34 @@ class FirebaseService {
         .where('studentId', isEqualTo: studentId)
         .get();
 
-    return snapshot.docs
-        .map((doc) => (doc.data()['quizId'] as String))
-        .toSet();
+    return snapshot.docs.map((doc) => (doc.data()['quizId'] as String)).toSet();
+  }
+
+  // ============ ANTI-CHEAT OPERATIONS ============
+
+  // Get submissions with anti-cheat flags
+  static Stream<QuerySnapshot> getFlaggedSubmissions() {
+    return _firestore
+        .collection('submissions')
+        .where('antiCheat.flagged', isEqualTo: true)
+        .snapshots();
+  }
+
+  // Get suspicious activities for a student
+  static Future<QuerySnapshot> getSuspiciousActivities(String studentId) {
+    return _firestore
+        .collection('suspicious_activities')
+        .where('studentId', isEqualTo: studentId)
+        .orderBy('timestamp', descending: true)
+        .get();
+  }
+
+  // Get suspicious activities for a submission
+  static Future<QuerySnapshot> getSubmissionActivities(String submissionId) {
+    return _firestore
+        .collection('suspicious_activities')
+        .where('submissionId', isEqualTo: submissionId)
+        .orderBy('timestamp', descending: true)
+        .get();
   }
 }

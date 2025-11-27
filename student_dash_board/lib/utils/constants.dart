@@ -23,11 +23,14 @@ class AppConstants {
 
   // Messages
   static const String noQuizzesMessage = 'Chưa có bài thi nào';
-  static const String allQuizzesCompletedMessage = 'Bạn đã hoàn thành tất cả bài thi!';
+  static const String allQuizzesCompletedMessage =
+      'Bạn đã hoàn thành tất cả bài thi!';
   static const String noSubmissionsMessage = 'Chưa có bài nộp nào';
-  static const String answerAllQuestionsMessage = 'Vui lòng trả lời tất cả câu hỏi!';
+  static const String answerAllQuestionsMessage =
+      'Vui lòng trả lời tất cả câu hỏi!';
   static const String timeUpMessage = '⏰ Hết giờ! Tự động nộp bài...';
-  static const String exitConfirmMessage = 'Bạn có chắc muốn thoát? Bài làm sẽ không được lưu.';
+  static const String exitConfirmMessage =
+      'Bạn có chắc muốn thoát? Bài làm sẽ không được lưu.';
 
   // Dashboard
   static const String availableQuizzesTitle = 'Bài thi khả dụng';

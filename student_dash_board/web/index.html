@@ -1,38 +1,316 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Student Quiz System">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="new_student_dash_board">
+  <meta name="apple-mobile-web-app-title" content="Student Quiz">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>new_student_dash_board</title>
+  <title>Student Quiz System</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase SDKs - Using compat version for Flutter -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+  <!-- TensorFlow.js for Face Detection -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+
+  <!-- TensorFlow.js Face Detection (MediaPipe) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-detection@1.0.2"></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXzAkBGbhRuppzcZTteiE1QS6iIUHXjFQ",
+      authDomain: "exam-system-d7709.firebaseapp.com",
+      projectId: "exam-system-d7709",
+      storageBucket: "exam-system-d7709.firebasestorage.app",
+      messagingSenderId: "653290580720",
+      appId: "1:653290580720:web:a675fa963cb7efaf077035",
+      measurementId: "G-WFBT2L3LG8"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <!-- Face Detection Module -->
+  <script>
+    let faceDetectionModel = null;
+    let isModelLoading = false;
+    let modelLoadStartTime = null;
+
+    // Load Face Detection Model with improved error handling
+    async function loadFaceDetectionModel(onSuccess, onError) {
+      console.log('🎯 loadFaceDetectionModel called');
+
+      if (faceDetectionModel) {
+        console.log('✅ Model already loaded');
+        onSuccess(faceDetectionModel);
+        return;
+      }
+
+      if (isModelLoading) {
+        console.log('⏳ Model is already loading...');
+        return;
+      }
+
+      try {
+        isModelLoading = true;
+        modelLoadStartTime = Date.now();
+        console.log('🔄 Starting to load MediaPipe Face Detection model...');
+
+        // Check if libraries are available
+        if (typeof tf === 'undefined') {
+          throw new Error('TensorFlow.js is not loaded');
+        }
+        console.log('✅ TensorFlow.js version:', tf.version.tfjs);
+
+        if (typeof faceDetection === 'undefined') {
+          throw new Error('Face Detection library is not loaded');
+        }
+        console.log('✅ Face Detection library loaded');
+
+        // Use MediaPipe FaceDetector
+        const model = faceDetection.SupportedModels.MediaPipeFaceDetector;
+        const detectorConfig = {
+          runtime: 'tfjs',
+          maxFaces: 5,
+          modelType: 'short' // 'short' is faster and lighter than 'full'
+        };
+
+        console.log('🔄 Creating detector with config:', detectorConfig);
+        faceDetectionModel = await faceDetection.createDetector(model, detectorConfig);
+
+        const loadTime = Date.now() - modelLoadStartTime;
+        console.log(`✅ Face detection model loaded successfully in ${loadTime}ms!`);
+
+        isModelLoading = false;
+        onSuccess(faceDetectionModel);
+
+      } catch (error) {
+        const loadTime = modelLoadStartTime ? Date.now() - modelLoadStartTime : 0;
+        console.error(`❌ Failed to load face detection model after ${loadTime}ms:`, error);
+        console.error('Error details:', error.message);
+        console.error('Stack trace:', error.stack);
+
+        isModelLoading = false;
+        onError(error);
+      }
+    }
+
+    // Detect faces in video with improved error handling
+    async function detectFaces(videoElement, canvasElement, callback) {
+      if (!faceDetectionModel) {
+        console.warn('⚠️ Face detection model not loaded yet');
+        callback(0);
+        return;
+      }
+
+      if (!videoElement || videoElement.readyState < 2) {
+        console.warn('⚠️ Video not ready, readyState:', videoElement?.readyState);
+        callback(0);
+        return;
+      }
+
+      try {
+        // Detect faces
+        const faces = await faceDetectionModel.estimateFaces(videoElement, {
+          flipHorizontal: false
+        });
+
+        // Draw on canvas
+        const ctx = canvasElement.getContext('2d');
+
+        // Save context state
+        ctx.save();
+
+        // Clear and flip canvas to match video mirror
+        ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        ctx.translate(canvasElement.width, 0);
+        ctx.scale(-1, 1);
+
+        if (faces && faces.length > 0) {
+          // Draw each detected face
+          faces.forEach((face, index) => {
+            const box = face.box;
+
+            // Draw bounding box
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(box.xMin, box.yMin, box.width, box.height);
+
+            // Draw label background
+            const labelText = `Face ${index + 1}: ${(face.score * 100).toFixed(0)}%`;
+            ctx.font = 'bold 16px Arial';
+            const textWidth = ctx.measureText(labelText).width;
+
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+            ctx.fillRect(box.xMin, box.yMin - 30, textWidth + 12, 26);
+
+            // Draw label text (flip it back to be readable)
+            ctx.save();
+            ctx.translate(box.xMin + textWidth / 2 + 6, box.yMin - 17);
+            ctx.scale(-1, 1);
+            ctx.fillStyle = '#000000';
+            ctx.fillText(labelText, -textWidth / 2, 0);
+            ctx.restore();
+
+            // Draw keypoints if available
+            if (face.keypoints) {
+              ctx.fillStyle = '#ff0000';
+              face.keypoints.forEach(keypoint => {
+                ctx.beginPath();
+                ctx.arc(keypoint.x, keypoint.y, 3, 0, 2 * Math.PI);
+                ctx.fill();
+              });
+            }
+          });
+
+          // Only log occasionally to reduce console spam
+          if (Math.random() < 0.05) {
+            console.log(`✅ Detected ${faces.length} face(s)`);
+          }
+        } else {
+          // No face detected - just draw a subtle red tint (no text overlay)
+          ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+          ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+
+          // Only log occasionally
+          if (Math.random() < 0.05) {
+            console.warn('⚠️ No face detected');
+          }
+        }
+
+        // Restore context
+        ctx.restore();
+
+        callback(faces ? faces.length : 0);
+
+      } catch (error) {
+        console.error('❌ Face detection error:', error);
+        callback(0);
+      }
+    }
+
+    // Make functions globally accessible
+    window.loadFaceDetectionModel = loadFaceDetectionModel;
+    window.detectFaces = detectFaces;
+
+    // Debug function to check status
+    window.checkFaceDetectionStatus = function() {
+      console.log('📊 Face Detection Status:');
+      console.log('- TensorFlow.js loaded:', typeof tf !== 'undefined');
+      console.log('- TensorFlow.js version:', typeof tf !== 'undefined' ? tf.version.tfjs : 'N/A');
+      console.log('- Face Detection loaded:', typeof faceDetection !== 'undefined');
+      console.log('- Model loaded:', faceDetectionModel !== null);
+      console.log('- Model loading:', isModelLoading);
+
+      if (typeof tf !== 'undefined') {
+        console.log('- TF Backend:', tf.getBackend());
+      }
+
+      return {
+        tfLoaded: typeof tf !== 'undefined',
+        faceDetectionLoaded: typeof faceDetection !== 'undefined',
+        modelLoaded: faceDetectionModel !== null,
+        isLoading: isModelLoading
+      };
+    };
+
+    // Log when libraries are loaded
+    window.addEventListener('load', function() {
+      console.log('🚀 Page loaded, checking libraries...');
+
+      if (window.tf) {
+        console.log('✅ TensorFlow.js loaded:', tf.version.tfjs);
+        console.log('📊 TF Backend:', tf.getBackend());
+      } else {
+        console.error('❌ TensorFlow.js NOT loaded!');
+      }
+
+      if (window.faceDetection) {
+        console.log('✅ Face Detection library loaded');
+        console.log('📊 Supported models:', Object.keys(faceDetection.SupportedModels));
+      } else {
+        console.error('❌ Face Detection library NOT loaded!');
+      }
+
+      // Try to set backend if available
+      if (window.tf) {
+        tf.ready().then(() => {
+          console.log('✅ TensorFlow.js is ready');
+          console.log('📊 Available backends:', tf.engine().registryFactory);
+        });
+      }
+    });
+
+    // Check library loading after a delay
+    setTimeout(function() {
+      console.log('🔍 Checking library status after 2 seconds...');
+      window.checkFaceDetectionStatus();
+    }, 2000);
+  </script>
+
+  <style>
+    /* Loading indicator styles */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+
+    .loading-content {
+      text-align: center;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+<!-- Loading indicator (will be hidden when Flutter loads) -->
+<div id="loading" class="loading">
+  <div class="loading-content">
+    <div class="spinner"></div>
+    <p>Loading Student Quiz System...</p>
+    <small>Loading TensorFlow.js & Face Detection...</small>
+  </div>
+</div>
+
+<script>
+  // Hide loading indicator when Flutter is ready
+  window.addEventListener('flutter-first-frame', function() {
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.style.display = 'none';
+    }
+  });
+</script>
+
+<script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
