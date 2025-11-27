@@ -18,16 +18,17 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code
+# Uncomment this if you don't want to sync VSCode settings
 #.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
@@ -39,7 +40,40 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android build outputs
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/.gradle/
+/android/local.properties
+/android/app/key.properties
+/android/app/*.keystore
+
+# Firebase keys — RẤT QUAN TRỌNG
+# Không commit file nhạy cảm Firebase lên GitHub
+android/app/google-services.json
+**/google-services.json
+**/GoogleService-Info.plist
+
+# iOS build outputs
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/.symlinks/
+ios/build/
+ios/Flutter/Flutter.podspec
+
+# Linux
+linux/flutter/ephemeral/
+
+# macOS
+macos/Flutter/ephemeral/
+
+# Windows
+windows/flutter/ephemeral/
+
+# Web
+web/.dart_tool/
+
+# Crashlytics (nếu dùng)
+crashlytics-build.properties
+
