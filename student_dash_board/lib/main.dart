@@ -21,7 +21,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Student Quiz App',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: const TeacherPanel(),
+      home: const StudentPanel(studentId: "106220273"),
+      // home: const TeacherPanel(),
       debugShowCheckedModeBanner: false,
     );
   }

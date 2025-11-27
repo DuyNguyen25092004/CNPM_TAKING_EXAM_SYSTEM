@@ -9,10 +9,7 @@ import 'history_page.dart';
 class StudentPanel extends StatefulWidget {
   final String studentId;
 
-  const StudentPanel({
-    Key? key,
-    required this.studentId,
-  }) : super(key: key);
+  const StudentPanel({Key? key, required this.studentId}) : super(key: key);
 
   @override
   State<StudentPanel> createState() => StudentPanelState();
@@ -29,7 +26,7 @@ class StudentPanelState extends State<StudentPanel> {
     _pages = [
       DashboardPage(studentId: widget.studentId),
       QuizListPage(studentId: widget.studentId),
-      const SubmitQuizPage(),
+      // const SubmitQuizPage(),
       HistoryPage(studentId: widget.studentId),
     ];
   }
@@ -64,10 +61,10 @@ class StudentPanelState extends State<StudentPanel> {
             icon: Icon(AppConstants.quizIcon),
             label: AppStrings.quizList,
           ),
-          NavigationDestination(
-            icon: Icon(AppConstants.uploadIcon),
-            label: AppStrings.submitQuiz,
-          ),
+          // NavigationDestination(
+          //   icon: Icon(AppConstants.uploadIcon),
+          //   label: AppStrings.submitQuiz,
+          // ),
           NavigationDestination(
             icon: Icon(AppConstants.historyIcon),
             label: AppStrings.history,
