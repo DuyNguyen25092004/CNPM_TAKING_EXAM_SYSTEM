@@ -317,7 +317,7 @@ Hoặc click vào link trong error message khi chạy app lần đầu.
 
 ### 1. Clone repository
 ```bash
-git clone [repository-url]
+git clone https://github.com/DuyNguyen25092004/CNPM_TAKING_EXAM_SYSTEM.git
 cd student-quiz-app
 ```
 
