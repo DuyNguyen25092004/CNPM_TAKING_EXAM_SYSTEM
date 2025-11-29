@@ -26,48 +26,40 @@ class StudentPanelState extends State<StudentPanel> {
     _pages = [
       DashboardPage(studentId: widget.studentId),
       QuizListPage(studentId: widget.studentId),
-      // const SubmitQuizPage(),
       HistoryPage(studentId: widget.studentId),
     ];
-  }
-
-  void navigateToTab(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppConstants.studentPanelTitle),
+        title: const Text('Học Tập'),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
-        elevation: 2,
+        elevation: 0,
       ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (int index) {
-          navigateToTab(index);
+          setState(() => _selectedIndex = index);
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(AppConstants.dashboardIcon),
-            label: AppStrings.dashboard,
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Trang chủ',
           ),
           NavigationDestination(
-            icon: Icon(AppConstants.quizIcon),
-            label: AppStrings.quizList,
+            icon: Icon(Icons.quiz_outlined),
+            selectedIcon: Icon(Icons.quiz),
+            label: 'Bài thi',
           ),
-          // NavigationDestination(
-          //   icon: Icon(AppConstants.uploadIcon),
-          //   label: AppStrings.submitQuiz,
-          // ),
           NavigationDestination(
-            icon: Icon(AppConstants.historyIcon),
-            label: AppStrings.history,
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Lịch sử',
           ),
         ],
       ),

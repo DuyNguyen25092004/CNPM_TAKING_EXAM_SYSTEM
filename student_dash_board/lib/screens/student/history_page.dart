@@ -17,30 +17,7 @@ class HistoryPage extends StatelessWidget {
       stream: FirebaseService.getStudentSubmissions(studentId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          print('Lỗi History: ${snapshot.error}');
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(AppConstants.errorIcon, size: 60, color: AppConstants.errorColor),
-                const SizedBox(height: 10),
-                Text('Lỗi: ${snapshot.error}'),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    // Reload page
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HistoryPage(studentId: studentId),
-                      ),
-                    );
-                  },
-                  child: const Text(AppStrings.retry),
-                ),
-              ],
-            ),
-          );
+          return _buildErrorWidget(snapshot.error);
         }
 
         if (!snapshot.hasData) {
@@ -48,28 +25,23 @@ class HistoryPage extends StatelessWidget {
         }
 
         if (snapshot.data!.docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(AppConstants.historyIcon, size: 80, color: Colors.grey),
-                SizedBox(height: 20),
-                Text(
-                  AppConstants.noQuizzesMessage,
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
+                Icon(Icons.history, size: 80, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text('Chưa có lịch sử làm bài', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
               ],
             ),
           );
         }
 
-        // Sort submissions by timestamp (client-side)
         final sortedDocs = snapshot.data!.docs.toList()
           ..sort((a, b) {
             final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
             final bTime = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-            if (aTime == null || bTime == null) return 0;
-            return bTime.compareTo(aTime); // Descending order
+            return bTime?.compareTo(aTime ?? Timestamp.now()) ?? 0;
           });
 
         return ListView.builder(
@@ -81,40 +53,45 @@ class HistoryPage extends StatelessWidget {
 
             final score = data['score'] ?? 0;
             final total = data['totalQuestions'] ?? 1;
-            final percentage = Helpers.getPercentageString(score, total);
+            final percentage = ((score / total) * 100).toStringAsFixed(0);
 
-            return Card(
+            return Container(
               margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Helpers.getScoreColor(score / total),
-                  child: Text(
-                    '$percentage%',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                contentPadding: const EdgeInsets.all(16),
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _getScoreBgColor(double.parse(percentage)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$percentage%',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12),
                     ),
                   ),
                 ),
-                title: Text(data['quizTitle'] ?? 'N/A'),
+                title: Text(data['quizTitle'] ?? 'Bài thi', style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Điểm số: $score/$total'),
-                    Text(Helpers.formatDateTime(data['timestamp'])),
+                    const SizedBox(height: 4),
+                    Text('$score/$total điểm', style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                    Text(Helpers.formatDateTime(data['timestamp']), style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                   ],
                 ),
                 trailing: IconButton(
-                  icon: const Icon(AppConstants.visibilityIcon),
+                  icon: const Icon(Icons.arrow_forward_ios, size: 18),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => ResultDetailPage(
-                          submissionId: submission.id,
-                        ),
-                      ),
+                      MaterialPageRoute(builder: (context) => ResultDetailPage(submissionId: submission.id)),
                     );
                   },
                 ),
@@ -123,6 +100,25 @@ class HistoryPage extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Color _getScoreBgColor(double percentage) {
+    if (percentage >= 80) return Colors.green;
+    if (percentage >= 60) return Colors.orange;
+    return Colors.red;
+  }
+
+  Widget _buildErrorWidget(dynamic error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+          const SizedBox(height: 16),
+          Text('Lỗi: $error', textAlign: TextAlign.center),
+        ],
+      ),
     );
   }
 }

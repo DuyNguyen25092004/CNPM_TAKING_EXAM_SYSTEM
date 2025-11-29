@@ -14,9 +14,10 @@ class ResultDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.resultDetail),
+        title: const Text('Chi tiết kết quả'),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseService.getSubmissionById(submissionId),
@@ -28,7 +29,7 @@ class ResultDetailPage extends StatelessWidget {
           final data = snapshot.data!.data() as Map<String, dynamic>;
           final score = data['score'] ?? 0;
           final total = data['totalQuestions'] ?? 1;
-          final timeSpent = data['timeSpent'] ?? 0;
+          final percentage = ((score / total) * 100).toStringAsFixed(0);
           final answers = Map<String, String>.from(data['answers'] ?? {});
           final quizId = data['quizId'] ?? '';
 
@@ -41,18 +42,18 @@ class ResultDetailPage extends StatelessWidget {
 
               final questions = questionSnapshot.data!.docs;
 
-              return ListView(
+              return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                children: [
-                  _buildScoreCard(context, data, score, total, timeSpent),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Chi tiết câu hỏi và đáp án',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  ..._buildDetailedAnswersList(questions, answers),
-                ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildScoreCard(context, data, score, total, percentage),
+                    const SizedBox(height: 24),
+                    Text('Chi tiết từng câu hỏi', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                    ..._buildDetailedAnswersList(questions, answers),
+                  ],
+                ),
               );
             },
           );
@@ -61,78 +62,54 @@ class ResultDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreCard(
-      BuildContext context,
-      Map<String, dynamic> data,
-      int score,
-      int total,
-      int timeSpent,
-      ) {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              data['quizTitle'] ?? 'N/A',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Column(
-                  children: [
-                    Text(
-                      '$score/$total',
-                      style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.primaryColor,
-                      ),
-                    ),
-                    Text(
-                      '${Helpers.getPercentageString(score, total)}%',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ],
-                ),
-                Column(
-                  children: [
-                    const Icon(AppConstants.timerIcon, size: 40, color: Colors.grey),
-                    const SizedBox(height: 8),
-                    Text(
-                      Helpers.formatTimeSpent(timeSpent),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const Text(
-                      'Thời gian',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Ngày làm bài: ${Helpers.formatDateTime(data['timestamp'])}',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
+  Widget _buildScoreCard(BuildContext context, Map<String, dynamic> data, int score, int total, String percentage) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppConstants.primaryColor, AppConstants.primaryColor.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Text(
+            data['quizTitle'] ?? 'Bài thi',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildScoreStat('Điểm', '$score/$total', Colors.white),
+              Container(width: 1, height: 60, color: Colors.white30),
+              _buildScoreStat('Phần trăm', '$percentage%', Colors.white),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Ngày làm bài: ${Helpers.formatDateTime(data['timestamp'])}',
+            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
+          ),
+        ],
       ),
     );
   }
 
-  List<Widget> _buildDetailedAnswersList(
-      List<QueryDocumentSnapshot> questions,
-      Map<String, String> answers,
-      ) {
+  Widget _buildScoreStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color)),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: color.withOpacity(0.8))),
+      ],
+    );
+  }
+
+  List<Widget> _buildDetailedAnswersList(List<QueryDocumentSnapshot> questions, Map<String, String> answers) {
     return questions.asMap().entries.map((entry) {
       final index = entry.key;
       final question = entry.value;
@@ -144,51 +121,40 @@ class ResultDetailPage extends StatelessWidget {
       final userAnswer = answers[question.id] ?? '';
       final isCorrect = userAnswer == correctAnswer;
 
-      return Card(
+      return Container(
         margin: const EdgeInsets.only(bottom: 16),
-        color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
+        decoration: BoxDecoration(
+          border: Border.all(color: isCorrect ? Colors.green.shade300 : Colors.red.shade300, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header câu hỏi
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isCorrect ? AppConstants.successColor : AppConstants.errorColor,
+                      color: isCorrect ? Colors.green : Colors.red,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'Câu ${index + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Icon(
-                    isCorrect ? AppConstants.checkCircleIcon : Icons.cancel,
-                    color: isCorrect ? AppConstants.successColor : AppConstants.errorColor,
-                  ),
+                  const SizedBox(width: 8),
+                  Icon(isCorrect ? Icons.check_circle : Icons.cancel, color: isCorrect ? Colors.green : Colors.red, size: 20),
+                  const Spacer(),
+                  Text(isCorrect ? 'Đúng' : 'Sai', style: TextStyle(fontWeight: FontWeight.w600, color: isCorrect ? Colors.green : Colors.red)),
                 ],
               ),
               const SizedBox(height: 12),
-
-              // Câu hỏi
-              Text(
-                questionText,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(questionText, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 16),
-
-              // Danh sách các đáp án
               ...options.asMap().entries.map((optionEntry) {
                 final optionIndex = optionEntry.key;
                 final option = optionEntry.value;
@@ -196,103 +162,30 @@ class ResultDetailPage extends StatelessWidget {
 
                 final isCorrectOption = optionLabel == correctAnswer;
                 final isUserOption = optionLabel == userAnswer;
-
-                Color? backgroundColor;
-                Color? textColor;
-                IconData? icon;
-
-                if (isCorrectOption && isUserOption) {
-                  // Đáp án đúng và người dùng chọn đúng
-                  backgroundColor = Colors.green.shade100;
-                  textColor = Colors.green.shade900;
-                  icon = AppConstants.checkCircleIcon;
-                } else if (isCorrectOption) {
-                  // Đáp án đúng nhưng người dùng không chọn
-                  backgroundColor = Colors.green.shade100;
-                  textColor = Colors.green.shade900;
-                  icon = AppConstants.checkCircleIcon;
-                } else if (isUserOption) {
-                  // Đáp án sai mà người dùng đã chọn
-                  backgroundColor = Colors.red.shade100;
-                  textColor = Colors.red.shade900;
-                  icon = Icons.cancel;
-                }
+                final shouldHighlight = isCorrectOption || isUserOption;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: backgroundColor,
+                    color: shouldHighlight ? (isCorrectOption ? Colors.green.shade100 : Colors.red.shade100) : Colors.transparent,
                     border: Border.all(
-                      color: backgroundColor != null
-                          ? (isCorrectOption ? Colors.green : Colors.red)
-                          : Colors.grey.shade300,
-                      width: 2,
+                      color: shouldHighlight ? (isCorrectOption ? Colors.green : Colors.red) : Colors.grey.shade300,
+                      width: 1,
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      if (icon != null) ...[
-                        Icon(icon, color: textColor, size: 20),
+                      if (shouldHighlight) ...[
+                        Icon(isCorrectOption ? Icons.check_circle : Icons.cancel, size: 18, color: isCorrectOption ? Colors.green : Colors.red),
                         const SizedBox(width: 8),
                       ],
-                      Expanded(
-                        child: Text(
-                          '$optionLabel. $option',
-                          style: TextStyle(
-                            fontWeight: (isCorrectOption || isUserOption)
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
+                      Expanded(child: Text('$optionLabel. $option', style: const TextStyle(fontSize: 14))),
                     ],
                   ),
                 );
               }).toList(),
-
-              const SizedBox(height: 12),
-
-              // Phần giải thích
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.info_outline, size: 20, color: Colors.blue),
-                        const SizedBox(width: 8),
-                        Text(
-                          isCorrect ? 'Bạn đã trả lời đúng!' : 'Giải thích:',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (!isCorrect) ...[
-                      const SizedBox(height: 8),
-                      Text('Đáp án của bạn: $userAnswer'),
-                      Text(
-                        'Đáp án đúng: $correctAnswer',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppConstants.successColor,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
             ],
           ),
         ),
