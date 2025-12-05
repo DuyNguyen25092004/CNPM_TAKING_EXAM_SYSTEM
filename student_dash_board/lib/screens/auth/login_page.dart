@@ -6,9 +6,7 @@ import '../student/student_panel.dart';
 import '../teacher/teacher_panel.dart';
 
 class LoginPage extends StatefulWidget {
-  final String role; // 'student' hoặc 'teacher'
-
-  const LoginPage({Key? key, required this.role}) : super(key: key);
+  const LoginPage({Key? key}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -31,10 +29,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  String get _roleTitle => widget.role == 'student' ? 'Học sinh' : 'Giáo viên';
-  Color get _roleColor => widget.role == 'student' ? Colors.blue : Colors.green;
-
-  // Đăng nhập
+  /// Xử lý đăng nhập và đồng bộ với Firestore
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -44,33 +39,50 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // Đăng nhập Firebase
-      print('Attempting login with role: ${widget.role}');
+      print('🔐 Attempting login...');
+
+      // Bước 1: Đăng nhập Firebase Authentication
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      if (userCredential.user != null && mounted) {
-        print('Login successful, user ID: ${userCredential.user!.uid}');
+      if (userCredential.user == null) {
+        throw Exception('Đăng nhập thất bại');
+      }
 
-        // Lưu vai trò vào Firestore và SharedPreferences
-        await UserService.setUserRole(userCredential.user!.uid, widget.role);
-        print('Role saved successfully');
+      final user = userCredential.user!;
+      print('✅ Authentication successful: ${user.uid}');
 
-        // Chuyển trang ngay lập tức dựa vào role
-        if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => widget.role == 'student'
-                  ? StudentPanel(studentId: userCredential.user!.uid)
-                  : const TeacherPanel(),
-            ),
-                (route) => false, // Xóa tất cả route trước đó
-          );
-        }
+      // Bước 2: Đồng bộ với Firestore và lấy role
+      // Hàm này sẽ tự động tạo document nếu chưa có
+      print('🔄 Syncing with Firestore...');
+      final role = await UserService.syncUserAndGetRole(user);
+
+      if (role == null || role.isEmpty) {
+        setState(() {
+          _errorMessage = 'Không thể xác định vai trò. Vui lòng thử lại.';
+        });
+        await _auth.signOut();
+        return;
+      }
+
+      print('✅ Role confirmed: $role');
+
+      // Bước 3: Chuyển trang dựa trên role
+      if (mounted) {
+        print('🚀 Navigating to $role panel');
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => role == 'student'
+                ? StudentPanel(studentId: user.uid)
+                : const TeacherPanel(),
+          ),
+              (route) => false,
+        );
       }
     } on FirebaseAuthException catch (e) {
+      print('❌ Firebase Auth Error: ${e.code}');
       setState(() {
         switch (e.code) {
           case 'user-not-found':
@@ -92,12 +104,13 @@ class _LoginPageState extends State<LoginPage> {
             _errorMessage = 'Quá nhiều lần thử. Vui lòng thử lại sau';
             break;
           default:
-            _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại';
+            _errorMessage = 'Đăng nhập thất bại: ${e.message}';
         }
       });
     } catch (e) {
+      print('❌ General Error: $e');
       setState(() {
-        _errorMessage = 'Có lỗi xảy ra. Vui lòng thử lại';
+        _errorMessage = 'Có lỗi xảy ra. Vui lòng thử lại sau.';
       });
     } finally {
       if (mounted) {
@@ -108,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Quên mật khẩu
+  /// Quên mật khẩu
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
 
@@ -184,21 +197,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              _roleColor.withOpacity(0.2),
+              Colors.blue.shade100,
               Colors.white,
               Colors.purple.shade50,
             ],
@@ -217,34 +222,35 @@ class _LoginPageState extends State<LoginPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: _roleColor.withOpacity(0.2),
+                        color: Colors.blue.shade100,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: _roleColor.withOpacity(0.3),
+                            color: Colors.blue.withOpacity(0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
                         ],
                       ),
-                      child: Icon(
-                        widget.role == 'student' ? Icons.person : Icons.person_outline,
+                      child: const Icon(
+                        Icons.school,
                         size: 60,
-                        color: _roleColor,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      'Đăng nhập $_roleTitle',
+                    const Text(
+                      'Student Quiz App',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: _roleColor,
+                        color: Colors.blue,
+                        letterSpacing: 1,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Nhập thông tin tài khoản của bạn',
+                      'Đăng nhập vào tài khoản của bạn',
                       style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 40),
@@ -303,7 +309,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: _roleColor, width: 2),
+                                borderSide: const BorderSide(color: Colors.blue, width: 2),
                               ),
                               filled: true,
                               fillColor: Colors.grey.shade50,
@@ -339,7 +345,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: _roleColor, width: 2),
+                                borderSide: const BorderSide(color: Colors.blue, width: 2),
                               ),
                               filled: true,
                               fillColor: Colors.grey.shade50,
@@ -359,9 +365,9 @@ class _LoginPageState extends State<LoginPage> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: _isLoading ? null : _handleForgotPassword,
-                              child: Text(
+                              child: const Text(
                                 'Quên mật khẩu?',
-                                style: TextStyle(color: _roleColor, fontWeight: FontWeight.w600),
+                                style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -374,7 +380,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _roleColor,
+                                backgroundColor: Colors.blue,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 elevation: 2,
@@ -388,7 +394,37 @@ class _LoginPageState extends State<LoginPage> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                                  : const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  : const Text(
+                                'Đăng nhập',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Info text
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.shade100),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Hệ thống sẽ tự động đồng bộ tài khoản với Firestore',
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
