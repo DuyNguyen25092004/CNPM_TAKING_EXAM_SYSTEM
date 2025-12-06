@@ -1,4 +1,4 @@
-// ============= FILE: lib/services/user_service.dart =============
+// lib/services/user_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,10 +8,11 @@ class UserService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Đồng bộ user từ Authentication sang Firestore
-  /// Tự động tạo document nếu chưa tồn tại
+  /// Tự động tạo document nếu chưa tồn tại với role mặc định là STUDENT
   static Future<String?> syncUserAndGetRole(User user) async {
     try {
       print('🔄 Syncing user: ${user.uid}');
+      print('📧 Email: ${user.email}');
 
       final docRef = _firestore.collection('users').doc(user.uid);
       final doc = await docRef.get();
@@ -28,27 +29,55 @@ class UserService {
         // Cập nhật thông tin đăng nhập
         await docRef.update({
           'email': user.email ?? '',
-          'displayName': user.email?.split('@')[0] ?? user.displayName ?? 'User',
+          'displayName': _extractDisplayName(user),
           'isActive': true,
           'lastLogin': FieldValue.serverTimestamp(),
         });
       } else {
-        // Document chưa tồn tại - tạo mới với role mặc định
-        print('📝 Creating new user document in Firestore');
+        // Document chưa tồn tại - tạo mới với role mặc định là STUDENT
+        print('🆕 Creating new user document in Firestore');
+        print('   UID: ${user.uid}');
+        print('   Email: ${user.email}');
 
-        // Xác định role mặc định dựa trên email
+        // Xác định role - ưu tiên teacher nếu có trong email, còn lại là student
         role = _determineDefaultRole(user.email);
 
-        await docRef.set({
-          'createdAt': FieldValue.serverTimestamp(),
-          'displayName': user.email?.split('@')[0] ?? user.displayName ?? 'User',
-          'email': user.email ?? '',
-          'isActive': true,
-          'lastLogin': FieldValue.serverTimestamp(),
-          'role': role,
-        });
+        // Trích xuất studentId từ email (9 chữ số đầu)
+        final studentId = _extractStudentId(user.email);
 
-        print('✅ User document created with role: $role');
+        try {
+          final userData = {
+            'createdAt': FieldValue.serverTimestamp(),
+            'displayName': _extractDisplayName(user),
+            'email': user.email ?? '',
+            'isActive': true,
+            'lastLogin': FieldValue.serverTimestamp(),
+            'role': role,
+            'studentId': studentId, // Thêm studentId cho student
+          };
+
+          print('   Creating document with data: $userData');
+
+          await docRef.set(userData);
+
+          print('✅ User document created successfully!');
+          print('   Role: $role');
+          if (studentId.isNotEmpty) {
+            print('   Student ID: $studentId');
+          }
+
+          // Verify document was created
+          final verifyDoc = await docRef.get();
+          if (verifyDoc.exists) {
+            print('✅ Document verified in Firestore');
+          } else {
+            print('⚠️ Document not found after creation - possible permissions issue');
+          }
+        } catch (createError) {
+          print('❌ Error creating user document: $createError');
+          print('   This might be a Firestore rules issue');
+          rethrow;
+        }
       }
 
       // Cache vào SharedPreferences
@@ -79,20 +108,72 @@ class UserService {
     }
   }
 
+  /// Trích xuất 9 chữ số đầu từ email làm studentId
+  static String _extractStudentId(String? email) {
+    if (email == null) return '';
+
+    final parts = email.split('@');
+    if (parts.isEmpty) return '';
+
+    // Lấy phần trước @
+    final username = parts[0];
+
+    // Trích xuất 9 chữ số đầu tiên
+    final digits = username.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.length >= 9) {
+      return digits.substring(0, 9);
+    }
+
+    return digits;
+  }
+
+  /// Trích xuất tên hiển thị từ email hoặc displayName
+  static String _extractDisplayName(User user) {
+    if (user.displayName != null && user.displayName!.isNotEmpty) {
+      return user.displayName!;
+    }
+
+    if (user.email != null) {
+      // Lấy phần trước @ làm tên
+      final username = user.email!.split('@')[0];
+      // Capitalize chữ cái đầu
+      return username.substring(0, 1).toUpperCase() + username.substring(1);
+    }
+
+    return 'User';
+  }
+
   /// Xác định role mặc định dựa trên email
+  /// MẶC ĐỊNH: student
+  /// CHỈ LÀ teacher nếu email chứa các từ khóa đặc biệt
   static String _determineDefaultRole(String? email) {
     if (email == null) return 'student';
 
     final emailLower = email.toLowerCase();
 
-    // Kiểm tra các pattern để xác định teacher
-    if (emailLower.contains('teacher') ||
-        emailLower.contains('admin') ||
-        emailLower.contains('gv') ||
-        emailLower.contains('giangvien')) {
-      return 'teacher';
+    // ONLY những email này mới là teacher
+    // Tất cả các email khác đều là student
+    final teacherKeywords = [
+      'teacher',
+      'admin',
+      'gv',
+      'giangvien',
+      'giaovien',
+      'instructor',
+      'professor',
+      'giảng_viên',
+    ];
+
+    for (var keyword in teacherKeywords) {
+      if (emailLower.contains(keyword)) {
+        print('👨‍🏫 Detected teacher keyword: $keyword');
+        return 'teacher';
+      }
     }
 
+    // Mặc định tất cả là student
+    print('👨‍🎓 Default role assigned: student');
     return 'student';
   }
 
@@ -240,6 +321,51 @@ class UserService {
     } catch (e) {
       print('❌ Error checking user existence: $e');
       return false;
+    }
+  }
+
+  /// Lấy studentId từ user document
+  static Future<String?> getStudentId(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        return doc.data()?['studentId'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting studentId: $e');
+      return null;
+    }
+  }
+
+  /// Tạo hoặc cập nhật user document (dùng cho admin)
+  static Future<void> createOrUpdateUser({
+    required String userId,
+    required String email,
+    required String role,
+    String? displayName,
+  }) async {
+    try {
+      final studentId = _extractStudentId(email);
+
+      await _firestore.collection('users').doc(userId).set({
+        'email': email,
+        'role': role,
+        'displayName': displayName ?? _extractDisplayName(
+          FirebaseAuth.instance.currentUser ?? User as User,
+        ),
+        'studentId': studentId,
+        'isActive': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print('✅ User created/updated successfully');
+      print('   Role: $role');
+      print('   Student ID: $studentId');
+    } catch (e) {
+      print('❌ Error creating/updating user: $e');
+      rethrow;
     }
   }
 }

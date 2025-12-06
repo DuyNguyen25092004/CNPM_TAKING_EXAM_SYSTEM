@@ -8,6 +8,9 @@ import 'screens/student/class_list_page.dart';
 import 'screens/teacher/teacher_panel.dart';
 import 'services/user_service.dart';
 
+// Import helper (cho debug)
+// import 'utils/create_users_helper.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -115,7 +118,6 @@ class AuthWrapper extends StatelessWidget {
             print('✅ Redirecting to $role panel');
 
             if (role == 'student') {
-              // ĐÃ SỬA: Điều hướng đến ClassListPage thay vì StudentPanel
               return ClassListPage(studentId: user.uid);
             } else if (role == 'teacher') {
               return const TeacherPanel();
@@ -189,8 +191,7 @@ class AuthWrapper extends StatelessWidget {
                   ),
                 ),
 
-              if (showRetry && onRetry != null)
-                const SizedBox(height: 16),
+              if (showRetry && onRetry != null) const SizedBox(height: 16),
 
               // Nút đăng xuất
               TextButton(
@@ -200,6 +201,28 @@ class AuthWrapper extends StatelessWidget {
                 },
                 child: const Text('Đăng xuất'),
               ),
+
+              // DEBUG BUTTON - Uncomment khi cần tạo lại users
+              // const SizedBox(height: 32),
+              // const Divider(),
+              // const SizedBox(height: 16),
+              // ElevatedButton.icon(
+              //   onPressed: () async {
+              //     // Import CreateUsersHelper ở đầu file
+              //     await CreateUsersHelper.recreateAllUsersFromAuth();
+              //     ScaffoldMessenger.of(context).showSnackBar(
+              //       const SnackBar(
+              //         content: Text('✅ Đã tạo lại users! Check console logs'),
+              //         backgroundColor: Colors.green,
+              //       ),
+              //     );
+              //   },
+              //   icon: const Icon(Icons.build),
+              //   label: const Text('DEBUG: Tạo lại Users'),
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: Colors.orange,
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -207,3 +230,42 @@ class AuthWrapper extends StatelessWidget {
     );
   }
 }
+
+// ============================================
+// HƯỚNG DẪN KHẮC PHỤC VẤN ĐỀ USERS
+// ============================================
+//
+// Nếu bạn đã xóa collection 'users' trong Firestore:
+//
+// CÁCH 1: Tự động (Khuyến nghị)
+// -------------------------------
+// 1. Đăng nhập lại vào app
+// 2. Hệ thống sẽ TỰ ĐỘNG tạo user document với:
+//    - Role mặc định: student
+//    - StudentId: 9 chữ số đầu email
+//    - DisplayName: từ email
+//
+// CÁCH 2: Thủ công qua Firebase Console
+// --------------------------------------
+// 1. Vào Firebase Console > Firestore Database
+// 2. Tạo collection 'users'
+// 3. Thêm document với ID = UID từ Authentication
+// 4. Thêm các field:
+//    {
+//      "email": "student@example.com",
+//      "role": "student",
+//      "studentId": "123456789",
+//      "displayName": "Student Name",
+//      "isActive": true,
+//      "createdAt": <timestamp>,
+//      "lastLogin": <timestamp>
+//    }
+//
+// CÁCH 3: Dùng Debug Helper
+// --------------------------
+// 1. Uncomment import CreateUsersHelper ở đầu file
+// 2. Uncomment DEBUG BUTTON trong _buildErrorScreen
+// 3. Chạy app và nhấn nút "DEBUG: Tạo lại Users"
+// 4. Check console logs để xem kết quả
+//
+// ============================================

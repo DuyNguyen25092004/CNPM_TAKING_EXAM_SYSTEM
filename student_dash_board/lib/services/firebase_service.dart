@@ -1,6 +1,7 @@
 // lib/services/firebase_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,51 +10,112 @@ class FirebaseService {
 
   /// Handle Firebase errors and print useful debug information
   static void _handleFirebaseError(dynamic error, String operation) {
-    developer.log('Firebase Error in $operation', error: error);
-
+    // Force print to console
     final errorString = error.toString();
+
+    // Always log with developer.log
+    developer.log(
+      'Firebase Error in $operation',
+      error: error,
+      name: 'FirebaseService',
+    );
 
     // Check for missing index error
     if (errorString.contains('index') ||
         errorString.contains('FAILED_PRECONDITION') ||
         errorString.contains('requires an index')) {
 
-      print('\n========================================');
-      print('🔥 FIREBASE INDEX ERROR');
-      print('========================================');
+      // Print multiple times to ensure visibility
+      debugPrint('\n' + '=' * 60);
+      debugPrint('🔥 FIREBASE INDEX ERROR 🔥');
+      debugPrint('=' * 60);
+      debugPrint('Operation: $operation');
+      debugPrint('Error: $errorString');
+      debugPrint('');
+
+      print('\n' + '=' * 60);
+      print('🔥 FIREBASE INDEX ERROR 🔥');
+      print('=' * 60);
       print('Operation: $operation');
       print('Error: $errorString');
+      print('');
 
       // Extract index URL if present
-      final urlPattern = RegExp(r'https://console\.firebase\.google\.com[^\s]+');
+      final urlPattern = RegExp(r'https://console\.firebase\.google\.com[^\s\)]+');
       final match = urlPattern.firstMatch(errorString);
 
       if (match != null) {
         final indexUrl = match.group(0);
-        print('\n📋 Click this link to create the required index:');
+
+        debugPrint('📋 CLICK THIS LINK TO CREATE THE REQUIRED INDEX:');
+        debugPrint('👉 $indexUrl');
+        debugPrint('');
+        debugPrint('Or copy and paste this URL into your browser:');
+        debugPrint(indexUrl);
+
+        print('📋 CLICK THIS LINK TO CREATE THE REQUIRED INDEX:');
+        print('👉 $indexUrl');
+        print('');
+        print('Or copy and paste this URL into your browser:');
         print(indexUrl);
       } else {
-        print('\n📋 Go to Firebase Console > Firestore Database > Indexes');
-        print('to create the required index.');
+        debugPrint('📋 To fix this error:');
+        debugPrint('1. Go to Firebase Console');
+        debugPrint('2. Select your project');
+        debugPrint('3. Go to Firestore Database > Indexes');
+        debugPrint('4. Create the required composite index');
+
+        print('📋 To fix this error:');
+        print('1. Go to Firebase Console');
+        print('2. Select your project');
+        print('3. Go to Firestore Database > Indexes');
+        print('4. Create the required composite index');
       }
 
-      print('========================================\n');
+      debugPrint('=' * 60 + '\n');
+      print('=' * 60 + '\n');
     } else if (errorString.contains('permission-denied') ||
         errorString.contains('PERMISSION_DENIED')) {
-      print('\n========================================');
-      print('🔒 FIREBASE PERMISSION ERROR');
-      print('========================================');
+      print('\n' + '=' * 60);
+      print('🔒 FIREBASE PERMISSION ERROR 🔒');
+      print('=' * 60);
       print('Operation: $operation');
       print('Error: $errorString');
-      print('\n📋 Check your Firestore Security Rules');
-      print('========================================\n');
+      print('');
+      print('📋 TO FIX THIS:');
+      print('1. Go to Firebase Console');
+      print('2. Select your project');
+      print('3. Go to Firestore Database > Rules');
+      print('4. Check and update your Security Rules');
+      print('');
+      print('Current operation needs permission for: $operation');
+      print('=' * 60 + '\n');
+    } else if (errorString.contains('not-found') ||
+        errorString.contains('NOT_FOUND')) {
+      print('\n' + '=' * 60);
+      print('🔍 FIREBASE NOT FOUND ERROR 🔍');
+      print('=' * 60);
+      print('Operation: $operation');
+      print('Error: Document or collection not found');
+      print('Details: $errorString');
+      print('=' * 60 + '\n');
+    } else if (errorString.contains('already-exists') ||
+        errorString.contains('ALREADY_EXISTS')) {
+      print('\n' + '=' * 60);
+      print('⚠️ FIREBASE DUPLICATE ERROR ⚠️');
+      print('=' * 60);
+      print('Operation: $operation');
+      print('Error: Document already exists');
+      print('Details: $errorString');
+      print('=' * 60 + '\n');
     } else {
-      print('\n========================================');
-      print('⚠️ FIREBASE ERROR');
-      print('========================================');
+      print('\n' + '=' * 60);
+      print('❌ FIREBASE ERROR ❌');
+      print('=' * 60);
       print('Operation: $operation');
-      print('Error: $errorString');
-      print('========================================\n');
+      print('Error Type: ${error.runtimeType}');
+      print('Error Message: $errorString');
+      print('=' * 60 + '\n');
     }
   }
 
@@ -62,6 +124,8 @@ class FirebaseService {
   /// Get classes where student is enrolled (using subcollection approach)
   static Stream<List<Map<String, dynamic>>> getStudentClasses(String studentId) async* {
     try {
+      print('📚 Fetching classes for student: $studentId');
+
       final studentDocsStream = _firestore
           .collectionGroup('students')
           .where('studentId', isEqualTo: studentId)
@@ -98,6 +162,7 @@ class FirebaseService {
   /// Get class information by ID
   static Future<DocumentSnapshot> getClassById(String classId) async {
     try {
+      print('📖 Fetching class by ID: $classId');
       return await _firestore.collection('classes').doc(classId).get();
     } catch (e) {
       _handleFirebaseError(e, 'getClassById');
@@ -108,6 +173,7 @@ class FirebaseService {
   /// Get all classes for a teacher
   static Stream<QuerySnapshot> getTeacherClasses(String teacherId) {
     try {
+      print('👨‍🏫 Fetching classes for teacher: $teacherId');
       return _firestore
           .collection('classes')
           .where('teacherId', isEqualTo: teacherId)
@@ -129,6 +195,7 @@ class FirebaseService {
     String? description,
   }) async {
     try {
+      print('➕ Creating new class: $name');
       return await _firestore.collection('classes').add({
         'teacherId': teacherId,
         'name': name,
@@ -146,6 +213,7 @@ class FirebaseService {
   /// Update class information
   static Future<void> updateClass(String classId, Map<String, dynamic> data) async {
     try {
+      print('✏️ Updating class: $classId');
       await _firestore.collection('classes').doc(classId).update({
         ...data,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -159,6 +227,8 @@ class FirebaseService {
   /// Delete a class
   static Future<void> deleteClass(String classId) async {
     try {
+      print('🗑️ Deleting class: $classId');
+
       // Delete students subcollection
       final studentsSnapshot = await _firestore
           .collection('classes')
@@ -183,6 +253,7 @@ class FirebaseService {
 
       // Delete class document
       await _firestore.collection('classes').doc(classId).delete();
+      print('✅ Class deleted successfully');
     } catch (e) {
       _handleFirebaseError(e, 'deleteClass');
       rethrow;
@@ -198,6 +269,8 @@ class FirebaseService {
     required String name,
   }) async {
     try {
+      print('👤 Adding student to class: $name');
+
       // Check if student already exists
       final existingStudent = await _firestore
           .collection('classes')
@@ -228,6 +301,8 @@ class FirebaseService {
       await _firestore.collection('classes').doc(classId).update({
         'studentCount': currentCount + 1,
       });
+
+      print('✅ Student added successfully');
     } catch (e) {
       _handleFirebaseError(e, 'addStudentToClass');
       rethrow;
@@ -241,6 +316,7 @@ class FirebaseService {
     required String name,
   }) async {
     try {
+      print('✏️ Updating student: $name');
       await _firestore
           .collection('classes')
           .doc(classId)
@@ -262,6 +338,7 @@ class FirebaseService {
     required String studentDocId,
   }) async {
     try {
+      print('🗑️ Removing student from class');
       await _firestore
           .collection('classes')
           .doc(classId)
@@ -276,6 +353,8 @@ class FirebaseService {
       await _firestore.collection('classes').doc(classId).update({
         'studentCount': currentCount > 0 ? currentCount - 1 : 0,
       });
+
+      print('✅ Student removed successfully');
     } catch (e) {
       _handleFirebaseError(e, 'removeStudentFromClass');
       rethrow;
@@ -285,6 +364,7 @@ class FirebaseService {
   /// Get students in a class
   static Stream<QuerySnapshot> getClassStudents(String classId) {
     try {
+      print('👥 Fetching students for class: $classId');
       return _firestore
           .collection('classes')
           .doc(classId)
@@ -305,6 +385,7 @@ class FirebaseService {
   /// Get available quizzes (all quizzes with available status)
   static Stream<QuerySnapshot> getAvailableQuizzes() {
     try {
+      print('📝 Fetching available quizzes');
       return _firestore
           .collection('quiz')
           .where('status', isEqualTo: 'available')
@@ -322,6 +403,7 @@ class FirebaseService {
   /// Get all quizzes (for teacher management)
   static Stream<QuerySnapshot> getAllQuizzes() {
     try {
+      print('📚 Fetching all quizzes');
       return _firestore
           .collection('quiz')
           .orderBy('title')
@@ -343,6 +425,7 @@ class FirebaseService {
     String status = 'available',
   }) async {
     try {
+      print('➕ Creating new quiz: $title');
       return await _firestore.collection('quiz').add({
         'title': title,
         'questionCount': questionCount,
@@ -359,6 +442,7 @@ class FirebaseService {
   /// Update quiz information
   static Future<void> updateQuiz(String quizId, Map<String, dynamic> data) async {
     try {
+      print('✏️ Updating quiz: $quizId');
       await _firestore.collection('quiz').doc(quizId).update({
         ...data,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -372,6 +456,8 @@ class FirebaseService {
   /// Delete a quiz and all its questions
   static Future<void> deleteQuiz(String quizId) async {
     try {
+      print('🗑️ Deleting quiz: $quizId');
+
       // Delete all questions first
       final questionsSnapshot = await _firestore
           .collection('quiz')
@@ -385,6 +471,7 @@ class FirebaseService {
 
       // Delete quiz document
       await _firestore.collection('quiz').doc(quizId).delete();
+      print('✅ Quiz deleted successfully');
     } catch (e) {
       _handleFirebaseError(e, 'deleteQuiz');
       rethrow;
@@ -400,6 +487,7 @@ class FirebaseService {
     int? order,
   }) async {
     try {
+      print('➕ Adding question to quiz: $quizId');
       return await _firestore
           .collection('quiz')
           .doc(quizId)
@@ -419,6 +507,7 @@ class FirebaseService {
   /// Delete all questions from a quiz
   static Future<void> deleteAllQuestionsFromQuiz(String quizId) async {
     try {
+      print('🗑️ Deleting all questions from quiz: $quizId');
       final questionsSnapshot = await _firestore
           .collection('quiz')
           .doc(quizId)
@@ -428,6 +517,7 @@ class FirebaseService {
       for (var doc in questionsSnapshot.docs) {
         await doc.reference.delete();
       }
+      print('✅ All questions deleted');
     } catch (e) {
       _handleFirebaseError(e, 'deleteAllQuestionsFromQuiz');
       rethrow;
@@ -437,6 +527,7 @@ class FirebaseService {
   /// Get quizzes assigned to a class (from class subcollection)
   static Stream<QuerySnapshot> getClassQuizzes(String classId) {
     try {
+      print('📝 Fetching quizzes for class: $classId');
       return _firestore
           .collection('classes')
           .doc(classId)
@@ -456,6 +547,7 @@ class FirebaseService {
       String classId,
       ) async {
     try {
+      print('📚 Fetching quiz details for class: $classId');
       final classQuizzesSnapshot = await _firestore
           .collection('classes')
           .doc(classId)
@@ -495,6 +587,7 @@ class FirebaseService {
     required String quizId,
   }) async {
     try {
+      print('📌 Assigning quiz to class');
       final quizDoc = await _firestore.collection('quiz').doc(quizId).get();
 
       if (!quizDoc.exists) {
@@ -535,6 +628,8 @@ class FirebaseService {
       await _firestore.collection('classes').doc(classId).update({
         'quizCount': currentCount + 1,
       });
+
+      print('✅ Quiz assigned successfully');
     } catch (e) {
       _handleFirebaseError(e, 'assignQuizToClass');
       rethrow;
@@ -547,6 +642,7 @@ class FirebaseService {
     required String quizId,
   }) async {
     try {
+      print('🗑️ Removing quiz from class');
       await _firestore
           .collection('classes')
           .doc(classId)
@@ -561,6 +657,8 @@ class FirebaseService {
       await _firestore.collection('classes').doc(classId).update({
         'quizCount': currentCount > 0 ? currentCount - 1 : 0,
       });
+
+      print('✅ Quiz removed successfully');
     } catch (e) {
       _handleFirebaseError(e, 'removeQuizFromClass');
       rethrow;
@@ -570,6 +668,7 @@ class FirebaseService {
   /// Get quiz by ID from main quiz collection
   static Future<DocumentSnapshot> getQuizById(String quizId) async {
     try {
+      print('📖 Fetching quiz by ID: $quizId');
       return await _firestore.collection('quiz').doc(quizId).get();
     } catch (e) {
       _handleFirebaseError(e, 'getQuizById');
@@ -580,6 +679,7 @@ class FirebaseService {
   /// Get questions for a quiz from quiz subcollection
   static Stream<QuerySnapshot> getQuizQuestions(String quizId) {
     try {
+      print('❓ Fetching questions for quiz: $quizId');
       return _firestore
           .collection('quiz')
           .doc(quizId)
@@ -597,6 +697,7 @@ class FirebaseService {
   /// Get quiz questions once (for submission)
   static Future<QuerySnapshot> getQuizQuestionsOnce(String quizId) async {
     try {
+      print('❓ Fetching questions once for quiz: $quizId');
       return await _firestore
           .collection('quiz')
           .doc(quizId)
@@ -622,6 +723,7 @@ class FirebaseService {
     required int timeSpent,
   }) async {
     try {
+      print('📤 Submitting quiz: $quizTitle');
       await _firestore.collection('submissions').add({
         'studentId': studentId,
         'quizId': quizId,
@@ -633,6 +735,7 @@ class FirebaseService {
         'timestamp': FieldValue.serverTimestamp(),
         'timeSpent': timeSpent,
       });
+      print('✅ Quiz submitted successfully');
     } catch (e) {
       _handleFirebaseError(e, 'submitQuiz');
       rethrow;
@@ -642,6 +745,7 @@ class FirebaseService {
   /// Get student submissions for all classes
   static Stream<QuerySnapshot> getStudentSubmissions(String studentId) {
     try {
+      print('📊 Fetching submissions for student: $studentId');
       return _firestore
           .collection('submissions')
           .where('studentId', isEqualTo: studentId)
@@ -662,6 +766,7 @@ class FirebaseService {
       String classId,
       ) {
     try {
+      print('📊 Fetching class submissions for student: $studentId');
       return _firestore
           .collection('submissions')
           .where('studentId', isEqualTo: studentId)
@@ -683,6 +788,7 @@ class FirebaseService {
         int limit = 5,
       }) {
     try {
+      print('📊 Fetching recent submissions (limit: $limit)');
       return _firestore
           .collection('submissions')
           .where('studentId', isEqualTo: studentId)
@@ -705,6 +811,7 @@ class FirebaseService {
         int limit = 5,
       }) {
     try {
+      print('📊 Fetching recent class submissions (limit: $limit)');
       return _firestore
           .collection('submissions')
           .where('studentId', isEqualTo: studentId)
@@ -724,6 +831,7 @@ class FirebaseService {
   /// Get submission by ID
   static Future<DocumentSnapshot> getSubmissionById(String submissionId) async {
     try {
+      print('📖 Fetching submission by ID: $submissionId');
       return await _firestore.collection('submissions').doc(submissionId).get();
     } catch (e) {
       _handleFirebaseError(e, 'getSubmissionById');
@@ -734,6 +842,7 @@ class FirebaseService {
   /// Get all submissions (for teacher view)
   static Stream<QuerySnapshot> getAllSubmissions() {
     try {
+      print('📊 Fetching all submissions');
       return _firestore
           .collection('submissions')
           .orderBy('timestamp', descending: true)
@@ -750,6 +859,7 @@ class FirebaseService {
   /// Get submissions for a specific quiz
   static Stream<QuerySnapshot> getQuizSubmissions(String quizId) {
     try {
+      print('📊 Fetching submissions for quiz: $quizId');
       return _firestore
           .collection('submissions')
           .where('quizId', isEqualTo: quizId)
@@ -767,6 +877,7 @@ class FirebaseService {
   /// Get submissions for a specific class (teacher view)
   static Stream<QuerySnapshot> getClassSubmissions(String classId) {
     try {
+      print('📊 Fetching submissions for class: $classId');
       return _firestore
           .collection('submissions')
           .where('classId', isEqualTo: classId)
@@ -823,6 +934,7 @@ class FirebaseService {
   /// Get completed quiz IDs for a student
   static Future<Set<String>> getCompletedQuizIds(String studentId) async {
     try {
+      print('✅ Fetching completed quiz IDs for student: $studentId');
       final snapshot = await _firestore
           .collection('submissions')
           .where('studentId', isEqualTo: studentId)
@@ -843,6 +955,7 @@ class FirebaseService {
       String classId,
       ) async {
     try {
+      print('✅ Fetching completed quiz IDs for student in class: $classId');
       final snapshot = await _firestore
           .collection('submissions')
           .where('studentId', isEqualTo: studentId)
@@ -863,6 +976,7 @@ class FirebaseService {
   /// Get class statistics
   static Future<Map<String, dynamic>> getClassStatistics(String classId) async {
     try {
+      print('📈 Calculating statistics for class: $classId');
       final classDoc = await getClassById(classId);
       final classData = classDoc.data() as Map<String, dynamic>?;
 
@@ -917,6 +1031,7 @@ class FirebaseService {
       String classId,
       ) async {
     try {
+      print('📈 Calculating student statistics for class: $classId');
       final submissionsSnapshot = await _firestore
           .collection('submissions')
           .where('studentId', isEqualTo: studentId)

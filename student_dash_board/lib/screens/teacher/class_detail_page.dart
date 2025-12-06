@@ -20,7 +20,7 @@ class ClassDetailPage extends StatefulWidget {
 class _ClassDetailPageState extends State<ClassDetailPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _studentIdController = TextEditingController();
+  final _studentEmailController = TextEditingController();
   final _studentNameController = TextEditingController();
 
   @override
@@ -32,9 +32,32 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _studentIdController.dispose();
+    _studentEmailController.dispose();
     _studentNameController.dispose();
     super.dispose();
+  }
+
+  // Extract 9 digits from email (before @)
+  String _extractStudentId(String email) {
+    final parts = email.split('@');
+    if (parts.isEmpty) return '';
+
+    // Get the part before @
+    final username = parts[0];
+
+    // Extract first 9 digits from username
+    final digits = username.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.length >= 9) {
+      return digits.substring(0, 9);
+    }
+
+    return digits;
+  }
+
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
   }
 
   @override
@@ -141,7 +164,15 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                   data['name'] ?? 'Không có tên',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text('ID: ${data['studentId']}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('ID: ${data['studentId']}'),
+                    Text('Email: ${data['email']}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
                 trailing: PopupMenuButton(
                   itemBuilder: (context) => [
                     const PopupMenuItem(
@@ -265,7 +296,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 
   void _showAddStudentDialog() {
-    _studentIdController.clear();
+    _studentEmailController.clear();
     _studentNameController.clear();
 
     showDialog(
@@ -277,13 +308,15 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: _studentIdController,
+              controller: _studentEmailController,
               decoration: const InputDecoration(
-                labelText: 'Mã học sinh',
+                labelText: 'Email học sinh',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.badge),
-                hintText: 'VD: HS001',
+                prefixIcon: Icon(Icons.email),
+                hintText: 'VD: 123456789@student.edu.vn',
+                helperText: '9 chữ số đầu email sẽ là mã học sinh',
               ),
+              keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
             TextField(
@@ -316,7 +349,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 
   void _showEditStudentDialog(String studentDocId, Map<String, dynamic> data) {
-    _studentIdController.text = data['studentId'] ?? '';
+    _studentEmailController.text = data['email'] ?? '';
     _studentNameController.text = data['name'] ?? '';
 
     showDialog(
@@ -328,13 +361,13 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: _studentIdController,
+              controller: _studentEmailController,
               decoration: const InputDecoration(
-                labelText: 'Mã học sinh',
+                labelText: 'Email học sinh',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.badge),
+                prefixIcon: Icon(Icons.email),
               ),
-              enabled: false,
+              enabled: false, // Cannot change email
             ),
             const SizedBox(height: 16),
             TextField(
@@ -470,8 +503,10 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 
   Future<void> _addStudent() async {
-    if (_studentIdController.text.trim().isEmpty ||
-        _studentNameController.text.trim().isEmpty) {
+    final email = _studentEmailController.text.trim();
+    final name = _studentNameController.text.trim();
+
+    if (email.isEmpty || name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('⚠️ Vui lòng nhập đầy đủ thông tin'),
@@ -481,20 +516,44 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       return;
     }
 
+    // Validate email
+    if (!_isValidEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Email không hợp lệ'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Extract student ID from email
+    final studentId = _extractStudentId(email);
+
+    if (studentId.length < 9) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Email phải chứa ít nhất 9 chữ số'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
-      // Check if student ID already exists in this class
+      // Check if student already exists in this class
       final existingStudent = await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
           .collection('students')
-          .where('studentId', isEqualTo: _studentIdController.text.trim())
+          .doc(studentId) // Use studentId as document ID
           .get();
 
-      if (existingStudent.docs.isNotEmpty) {
+      if (existingStudent.exists) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Mã học sinh đã tồn tại trong lớp'),
+              content: Text('⚠️ Học sinh đã tồn tại trong lớp'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -502,13 +561,16 @@ class _ClassDetailPageState extends State<ClassDetailPage>
         return;
       }
 
+      // Add student with studentId as document ID
       await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
           .collection('students')
-          .add({
-        'studentId': _studentIdController.text.trim(),
-        'name': _studentNameController.text.trim(),
+          .doc(studentId) // Use studentId as document ID
+          .set({
+        'studentId': studentId,
+        'email': email,
+        'name': name,
         'addedAt': FieldValue.serverTimestamp(),
       });
 
@@ -529,8 +591,8 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Thêm học sinh thành công!'),
+          SnackBar(
+            content: Text('✅ Thêm học sinh thành công! ID: $studentId'),
             backgroundColor: Colors.green,
           ),
         );
