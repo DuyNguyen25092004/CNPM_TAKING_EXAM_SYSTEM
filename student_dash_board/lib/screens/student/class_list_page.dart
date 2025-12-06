@@ -1,6 +1,5 @@
-// lib/screens/student/class_list_page.dart
+// lib/screens/student/class_list_page.dart (UPDATED)
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firebase_service.dart';
 import '../../utils/constants.dart';
 import 'student_panel.dart';
@@ -20,7 +19,7 @@ class ClassListPage extends StatelessWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: FirebaseService.getStudentClasses(studentId),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -31,20 +30,20 @@ class ClassListPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.data!.docs.isEmpty) {
+          if (snapshot.data!.isEmpty) {
             return _buildEmptyState(context);
           }
 
-          final classes = snapshot.data!.docs;
+          final classes = snapshot.data!;
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: classes.length,
             itemBuilder: (context, index) {
-              final classDoc = classes[index];
-              final data = classDoc.data() as Map<String, dynamic>;
+              final classData = classes[index];
+              final classId = classData['id'] as String;
 
-              return _buildClassCard(context, classDoc.id, data);
+              return _buildClassCard(context, classId, classData);
             },
           );
         },
@@ -52,7 +51,11 @@ class ClassListPage extends StatelessWidget {
     );
   }
 
-  Widget _buildClassCard(BuildContext context, String classId, Map<String, dynamic> data) {
+  Widget _buildClassCard(
+      BuildContext context,
+      String classId,
+      Map<String, dynamic> data,
+      ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(

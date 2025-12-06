@@ -1,9 +1,10 @@
-// lib/screens/teacher/teacher_panel.dart
+// lib/screens/teacher/teacher_panel.dart (UPDATED)
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'create_quiz_page.dart';
 import 'manage_quizzes_page.dart';
 import 'view_results_page.dart';
+import 'manage_classes_page.dart';
 import '../auth/login_page.dart';
 
 class TeacherPanel extends StatefulWidget {
@@ -18,12 +19,12 @@ class _TeacherPanelState extends State<TeacherPanel> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final List<Widget> _pages = const [
+    ManageClassesPage(), // New: Manage Classes
     ManageQuizzesPage(),
     CreateQuizPage(),
     ViewResultsPage(),
   ];
 
-  // Hàm xử lý đăng xuất
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -85,7 +86,6 @@ class _TeacherPanelState extends State<TeacherPanel> {
         foregroundColor: Colors.white,
         elevation: 2,
         actions: [
-          // Nút đăng xuất
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Đăng xuất',
@@ -101,12 +101,16 @@ class _TeacherPanelState extends State<TeacherPanel> {
         },
         destinations: const [
           NavigationDestination(
+            icon: Icon(Icons.class_),
+            label: 'Lớp học',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.quiz),
-            label: 'Quản lý Đề thi',
+            label: 'Đề thi',
           ),
           NavigationDestination(
             icon: Icon(Icons.add_circle),
-            label: 'Tạo Đề thi',
+            label: 'Tạo đề',
           ),
           NavigationDestination(
             icon: Icon(Icons.assessment),
