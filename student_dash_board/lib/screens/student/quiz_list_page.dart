@@ -7,13 +7,18 @@ import 'quiz_taking_page.dart';
 
 class QuizListPage extends StatelessWidget {
   final String studentId;
+  final String classId;
 
-  const QuizListPage({Key? key, required this.studentId}) : super(key: key);
+  const QuizListPage({
+    Key? key,
+    required this.studentId,
+    required this.classId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseService.getAvailableQuizzes(),
+      stream: FirebaseService.getClassQuizzes(classId),
       builder: (context, quizSnapshot) {
         if (quizSnapshot.hasError) {
           return _buildErrorWidget(quizSnapshot.error);
@@ -24,7 +29,7 @@ class QuizListPage extends StatelessWidget {
         }
 
         return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseService.getStudentSubmissions(studentId),
+          stream: FirebaseService.getStudentClassSubmissions(studentId, classId),
           builder: (context, submissionSnapshot) {
             if (!submissionSnapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
@@ -108,6 +113,7 @@ class QuizListPage extends StatelessWidget {
                           context,
                           MaterialPageRoute(builder: (context) => QuizTakingPage(
                             quizId: quiz.id,
+                            classId: classId,
                             quizTitle: data['title'] ?? 'Quiz',
                             duration: data['duration'] ?? 30,
                             studentId: studentId,

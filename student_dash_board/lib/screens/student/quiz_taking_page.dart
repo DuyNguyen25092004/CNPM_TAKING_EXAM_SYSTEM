@@ -8,6 +8,7 @@ import '../../utils/helpers.dart';
 
 class QuizTakingPage extends StatefulWidget {
   final String quizId;
+  final String classId;
   final String quizTitle;
   final int duration;
   final String studentId;
@@ -15,6 +16,7 @@ class QuizTakingPage extends StatefulWidget {
   const QuizTakingPage({
     Key? key,
     required this.quizId,
+    required this.classId,
     required this.quizTitle,
     required this.duration,
     required this.studentId,
@@ -178,7 +180,6 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
   Widget _buildQuestionCard(QueryDocumentSnapshot question, int index, int total) {
     final data = question.data() as Map<String, dynamic>;
     final options = List<String>.from(data['options'] ?? []);
-    final isAnswered = answers.containsKey(question.id);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -300,6 +301,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
     await FirebaseService.submitQuiz(
       studentId: widget.studentId,
       quizId: widget.quizId,
+      classId: widget.classId,
       quizTitle: widget.quizTitle,
       score: score,
       totalQuestions: questionsSnapshot.docs.length,

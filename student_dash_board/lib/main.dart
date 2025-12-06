@@ -1,10 +1,10 @@
-// ============= FILE: lib/main.dart =============
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/auth/login_page.dart';
-import 'screens/student/student_panel.dart';
+import 'screens/student/class_list_page.dart';
 import 'screens/teacher/teacher_panel.dart';
 import 'services/user_service.dart';
 
@@ -115,7 +115,8 @@ class AuthWrapper extends StatelessWidget {
             print('✅ Redirecting to $role panel');
 
             if (role == 'student') {
-              return StudentPanel(studentId: user.uid);
+              // ĐÃ SỬA: Điều hướng đến ClassListPage thay vì StudentPanel
+              return ClassListPage(studentId: user.uid);
             } else if (role == 'teacher') {
               return const TeacherPanel();
             } else {

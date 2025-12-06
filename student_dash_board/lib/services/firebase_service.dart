@@ -1,18 +1,42 @@
 // lib/services/firebase_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/quiz_model.dart';
-import '../models/submission_model.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // ============ CLASS OPERATIONS (MỚI) ============
+
+  // Lấy danh sách lớp học của học sinh
+  static Stream<QuerySnapshot> getStudentClasses(String studentId) {
+    return _firestore
+        .collection('classes')
+        .where('studentIds', arrayContains: studentId)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  // Lấy thông tin lớp học
+  static Future<DocumentSnapshot> getClassById(String classId) {
+    return _firestore.collection('classes').doc(classId).get();
+  }
+
   // ============ QUIZ OPERATIONS ============
 
-  // Stream available quizzes
+  // Stream available quizzes (cũ - giữ lại để tương thích)
   static Stream<QuerySnapshot> getAvailableQuizzes() {
     return _firestore
         .collection('quiz')
         .where('status', isEqualTo: 'available')
+        .snapshots();
+  }
+
+  // Lấy danh sách bài thi của lớp (MỚI)
+  static Stream<QuerySnapshot> getClassQuizzes(String classId) {
+    return _firestore
+        .collection('quiz')
+        .where('classId', isEqualTo: classId)
+        .where('status', isEqualTo: 'available')
+        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 
@@ -40,7 +64,7 @@ class FirebaseService {
 
   // ============ SUBMISSION OPERATIONS ============
 
-  // Stream submissions by student
+  // Stream submissions by student (cũ - giữ lại để tương thích)
   static Stream<QuerySnapshot> getStudentSubmissions(String studentId) {
     return _firestore
         .collection('submissions')
@@ -48,11 +72,34 @@ class FirebaseService {
         .snapshots();
   }
 
-  // Stream recent submissions (for dashboard)
+  // Lấy bài nộp của học sinh trong lớp cụ thể (MỚI)
+  static Stream<QuerySnapshot> getStudentClassSubmissions(
+      String studentId, String classId) {
+    return _firestore
+        .collection('submissions')
+        .where('studentId', isEqualTo: studentId)
+        .where('classId', isEqualTo: classId)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  // Stream recent submissions (for dashboard) - cũ
   static Stream<QuerySnapshot> getRecentSubmissions(String studentId, {int limit = 5}) {
     return _firestore
         .collection('submissions')
         .where('studentId', isEqualTo: studentId)
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
+        .snapshots();
+  }
+
+  // Lấy hoạt động gần đây của học sinh trong lớp (MỚI)
+  static Stream<QuerySnapshot> getRecentClassSubmissions(
+      String studentId, String classId, {int limit = 5}) {
+    return _firestore
+        .collection('submissions')
+        .where('studentId', isEqualTo: studentId)
+        .where('classId', isEqualTo: classId)
         .orderBy('timestamp', descending: true)
         .limit(limit)
         .snapshots();
@@ -63,17 +110,18 @@ class FirebaseService {
     return _firestore.collection('submissions').doc(submissionId).get();
   }
 
-  // Submit quiz answers
+  // Submit quiz answers (CẬP NHẬT - thêm classId)
   static Future<void> submitQuiz({
     required String studentId,
     required String quizId,
+    String? classId, // Thêm optional để tương thích với code cũ
     required String quizTitle,
     required int score,
     required int totalQuestions,
     required Map<String, String> answers,
     required int timeSpent,
   }) {
-    return _firestore.collection('submissions').add({
+    final data = {
       'studentId': studentId,
       'quizId': quizId,
       'quizTitle': quizTitle,
@@ -82,7 +130,14 @@ class FirebaseService {
       'answers': answers,
       'timestamp': FieldValue.serverTimestamp(),
       'timeSpent': timeSpent,
-    });
+    };
+
+    // Chỉ thêm classId nếu có
+    if (classId != null) {
+      data['classId'] = classId;
+    }
+
+    return _firestore.collection('submissions').add(data);
   }
 
   // Check if student has completed a quiz
@@ -97,11 +152,39 @@ class FirebaseService {
     return result.docs.isNotEmpty;
   }
 
+  // Check if student has completed a quiz in a specific class (MỚI)
+  static Future<bool> hasCompletedQuizInClass(
+      String studentId, String quizId, String classId) async {
+    final result = await _firestore
+        .collection('submissions')
+        .where('studentId', isEqualTo: studentId)
+        .where('quizId', isEqualTo: quizId)
+        .where('classId', isEqualTo: classId)
+        .limit(1)
+        .get();
+
+    return result.docs.isNotEmpty;
+  }
+
   // Get completed quiz IDs for a student
   static Future<Set<String>> getCompletedQuizIds(String studentId) async {
     final snapshot = await _firestore
         .collection('submissions')
         .where('studentId', isEqualTo: studentId)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => (doc.data()['quizId'] as String))
+        .toSet();
+  }
+
+  // Get completed quiz IDs for a student in a specific class (MỚI)
+  static Future<Set<String>> getCompletedQuizIdsInClass(
+      String studentId, String classId) async {
+    final snapshot = await _firestore
+        .collection('submissions')
+        .where('studentId', isEqualTo: studentId)
+        .where('classId', isEqualTo: classId)
         .get();
 
     return snapshot.docs

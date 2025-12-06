@@ -5,12 +5,20 @@ import '../../utils/constants.dart';
 import 'dashboard_page.dart';
 import 'quiz_list_page.dart';
 import 'history_page.dart';
+import 'class_list_page.dart';
 import '../auth/login_page.dart';
 
 class StudentPanel extends StatefulWidget {
   final String studentId;
+  final String classId;
+  final String className;
 
-  const StudentPanel({Key? key, required this.studentId}) : super(key: key);
+  const StudentPanel({
+    Key? key,
+    required this.studentId,
+    required this.classId,
+    required this.className,
+  }) : super(key: key);
 
   @override
   State<StudentPanel> createState() => StudentPanelState();
@@ -26,13 +34,12 @@ class StudentPanelState extends State<StudentPanel> {
   void initState() {
     super.initState();
     _pages = [
-      DashboardPage(studentId: widget.studentId),
-      QuizListPage(studentId: widget.studentId),
-      HistoryPage(studentId: widget.studentId),
+      DashboardPage(studentId: widget.studentId, classId: widget.classId),
+      QuizListPage(studentId: widget.studentId, classId: widget.classId),
+      HistoryPage(studentId: widget.studentId, classId: widget.classId),
     ];
   }
 
-  // Hàm xử lý đăng xuất
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -85,16 +92,41 @@ class StudentPanelState extends State<StudentPanel> {
     }
   }
 
+  void _navigateToClassList() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClassListPage(studentId: widget.studentId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Học Tập'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Về danh sách lớp',
+          onPressed: _navigateToClassList,
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.className,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Text(
+              'Học Tập',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // Nút đăng xuất
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Đăng xuất',

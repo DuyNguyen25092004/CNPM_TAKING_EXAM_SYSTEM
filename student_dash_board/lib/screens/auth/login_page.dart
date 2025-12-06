@@ -1,9 +1,9 @@
-// ============= FILE: lib/screens/auth/login_page.dart =============
+// lib/screens/auth/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/user_service.dart';
-import '../student/student_panel.dart';
+import '../student/class_list_page.dart';
 import '../teacher/teacher_panel.dart';
 
 class LoginPage extends StatefulWidget {
@@ -133,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => role == 'student'
-              ? StudentPanel(studentId: user.uid)
+              ? ClassListPage(studentId: user.uid)  // ĐÃ SỬA: Đi đến ClassListPage thay vì StudentPanel
               : const TeacherPanel(),
         ),
             (route) => false,
@@ -329,7 +329,7 @@ class _LoginPageState extends State<LoginPage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 // Microsoft Logo (4 màu đặc trưng)
-                                Container(
+                                SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CustomPaint(

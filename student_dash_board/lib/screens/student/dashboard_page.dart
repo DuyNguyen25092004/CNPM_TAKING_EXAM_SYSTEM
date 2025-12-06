@@ -7,13 +7,18 @@ import '../../utils/helpers.dart';
 
 class DashboardPage extends StatelessWidget {
   final String studentId;
+  final String classId;
 
-  const DashboardPage({Key? key, required this.studentId}) : super(key: key);
+  const DashboardPage({
+    Key? key,
+    required this.studentId,
+    required this.classId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseService.getAvailableQuizzes(),
+      stream: FirebaseService.getClassQuizzes(classId),
       builder: (context, quizSnapshot) {
         if (quizSnapshot.hasError) {
           return _buildErrorWidget(quizSnapshot.error);
@@ -24,7 +29,7 @@ class DashboardPage extends StatelessWidget {
         }
 
         return StreamBuilder<QuerySnapshot>(
-          stream: FirebaseService.getStudentSubmissions(studentId),
+          stream: FirebaseService.getStudentClassSubmissions(studentId, classId),
           builder: (context, submissionSnapshot) {
             if (!submissionSnapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
@@ -47,7 +52,7 @@ class DashboardPage extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildSectionTitle('Hoạt động gần đây'),
                   const SizedBox(height: 12),
-                  _buildRecentSubmissions(studentId),
+                  _buildRecentSubmissions(studentId, classId),
                 ],
               ),
             );
@@ -100,9 +105,9 @@ class DashboardPage extends StatelessWidget {
     return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
   }
 
-  Widget _buildRecentSubmissions(String studentId) {
+  Widget _buildRecentSubmissions(String studentId, String classId) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseService.getRecentSubmissions(studentId, limit: 5),
+      stream: FirebaseService.getRecentClassSubmissions(studentId, classId, limit: 5),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return _buildLoadingCard();

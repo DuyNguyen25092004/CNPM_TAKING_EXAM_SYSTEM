@@ -8,13 +8,18 @@ import 'result_detail_page.dart';
 
 class HistoryPage extends StatelessWidget {
   final String studentId;
+  final String classId;
 
-  const HistoryPage({Key? key, required this.studentId}) : super(key: key);
+  const HistoryPage({
+    Key? key,
+    required this.studentId,
+    required this.classId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseService.getStudentSubmissions(studentId),
+      stream: FirebaseService.getStudentClassSubmissions(studentId, classId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return _buildErrorWidget(snapshot.error);
