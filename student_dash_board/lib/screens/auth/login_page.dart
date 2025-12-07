@@ -41,12 +41,6 @@ class _LoginPageState extends State<LoginPage> {
       microsoftProvider.addScope('email');
       microsoftProvider.addScope('profile');
 
-      // Tùy chọn: Thêm custom parameters nếu cần
-      // microsoftProvider.setCustomParameters({
-      //   'tenant': 'YOUR_TENANT_ID', // Nếu dùng Azure AD cụ thể
-      //   'prompt': 'select_account', // Luôn hiện màn hình chọn account
-      // });
-
       UserCredential? userCredential;
 
       // Kiểm tra platform và sử dụng method phù hợp
@@ -112,9 +106,23 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// Xử lý sau khi đăng nhập thành công (dùng chung cho cả Email và Microsoft)
+  /// Xử lý sau khi đăng nhập thành công
   Future<void> _handleSuccessfulLogin(User user) async {
     print('🔄 Syncing with Firestore...');
+
+    // Trích xuất studentId từ email
+    final studentId = UserService.extractStudentId(user.email);
+
+    if (studentId.isEmpty) {
+      setState(() {
+        _errorMessage = 'Email không chứa mã sinh viên hợp lệ (cần 9 chữ số). Vui lòng sử dụng email sinh viên.';
+      });
+      await _auth.signOut();
+      return;
+    }
+
+    print('🎓 Student ID extracted: $studentId');
+
     final role = await UserService.syncUserAndGetRole(user);
 
     if (role == null || role.isEmpty) {
@@ -127,47 +135,20 @@ class _LoginPageState extends State<LoginPage> {
 
     print('✅ Role confirmed: $role');
 
-    // Chuyển trang dựa trên role
+    // Chuyển trang dựa trên role - SỬ DỤNG STUDENT ID thay vì UID
     if (mounted) {
       print('🚀 Navigating to $role panel');
+      print('   Using Student ID: $studentId');
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => role == 'student'
-              ? ClassListPage(studentId: user.uid)  // ĐÃ SỬA: Đi đến ClassListPage thay vì StudentPanel
+              ? ClassListPage(studentId: studentId)  // Sử dụng studentId
               : const TeacherPanel(),
         ),
             (route) => false,
       );
     }
-  }
-
-  /// Xử lý lỗi Firebase Authentication
-  void _handleAuthError(FirebaseAuthException e) {
-    print('❌ Firebase Auth Error: ${e.code}');
-    setState(() {
-      switch (e.code) {
-        case 'account-exists-with-different-credential':
-          _errorMessage = 'Tài khoản đã tồn tại với phương thức đăng nhập khác';
-          break;
-        case 'invalid-credential':
-          _errorMessage = 'Thông tin đăng nhập không hợp lệ';
-          break;
-        case 'operation-not-allowed':
-          _errorMessage = 'Đăng nhập Microsoft chưa được kích hoạt';
-          break;
-        case 'user-disabled':
-          _errorMessage = 'Tài khoản đã bị vô hiệu hóa';
-          break;
-        case 'popup-closed-by-user':
-          _errorMessage = 'Đăng nhập bị hủy bỏ';
-          break;
-        case 'popup-blocked':
-          _errorMessage = 'Trình duyệt đã chặn popup. Vui lòng cho phép popup và thử lại';
-          break;
-        default:
-          _errorMessage = 'Đăng nhập thất bại: ${e.message}';
-      }
-    });
   }
 
   void _showDialog({required String title, required String message, required bool isError}) {
@@ -328,7 +309,7 @@ class _LoginPageState extends State<LoginPage> {
                                 : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Microsoft Logo (4 màu đặc trưng)
+                                // Microsoft Logo
                                 SizedBox(
                                   width: 24,
                                   height: 24,
@@ -372,7 +353,7 @@ class _LoginPageState extends State<LoginPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Sử dụng tài khoản Microsoft',
+                                'Sử dụng email sinh viên',
                                 style: TextStyle(
                                   color: Colors.blue.shade900,
                                   fontSize: 15,
@@ -381,7 +362,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Hệ thống hỗ trợ tài khoản Office 365, Outlook, Hotmail',
+                                'Email phải chứa 9 chữ số mã sinh viên',
                                 style: TextStyle(
                                   color: Colors.blue.shade700,
                                   fontSize: 13,
@@ -404,7 +385,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// Custom Painter để vẽ logo Microsoft (4 ô vuông màu đặc trưng)
+// Custom Painter để vẽ logo Microsoft
 class MicrosoftLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

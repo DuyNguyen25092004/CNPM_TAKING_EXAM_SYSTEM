@@ -7,13 +7,16 @@ import 'screens/auth/login_page.dart';
 import 'screens/student/class_list_page.dart';
 import 'screens/teacher/teacher_panel.dart';
 import 'services/user_service.dart';
-
-// Import helper (cho debug)
-// import 'utils/create_users_helper.dart';
+import 'services/auth_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 🔄 KHỞI ĐỘNG SERVICE ĐỒNG BỘ TỰ ĐỘNG
+  // Từ giờ, mọi thay đổi trong Authentication sẽ tự động sync sang Firestore
+  AuthSyncService.initialize();
+
   runApp(const MyApp());
 }
 
@@ -35,8 +38,20 @@ class MyApp extends StatelessWidget {
 }
 
 /// Widget tự động đồng bộ Authentication với Firestore
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({Key? key}) : super(key: key);
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void dispose() {
+    // Cleanup khi app đóng
+    AuthSyncService.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,9 +84,24 @@ class AuthWrapper extends StatelessWidget {
         print('👤 User logged in: ${user.uid}');
         print('📧 Email: ${user.email}');
 
+        // Trích xuất studentId từ email
+        final studentId = UserService.extractStudentId(user.email);
+
+        if (studentId.isEmpty) {
+          print('❌ Cannot extract student ID from email');
+          return _buildErrorScreen(
+            context,
+            title: 'Email không hợp lệ',
+            message: 'Email không chứa mã sinh viên hợp lệ (cần 9 chữ số).\nVui lòng sử dụng email sinh viên.',
+            showRetry: false,
+          );
+        }
+
+        print('🎓 Student ID: $studentId');
+
         // Đã đăng nhập - đồng bộ với Firestore và lấy role
         return FutureBuilder<String?>(
-          future: UserService.syncUserAndGetRole(user),
+          future: _syncAndGetRole(user, studentId),
           builder: (context, roleSnapshot) {
             // Đang đồng bộ và lấy role
             if (roleSnapshot.connectionState == ConnectionState.waiting) {
@@ -83,6 +113,11 @@ class AuthWrapper extends StatelessWidget {
                       CircularProgressIndicator(),
                       SizedBox(height: 16),
                       Text('Đang đồng bộ dữ liệu...'),
+                      SizedBox(height: 8),
+                      Text(
+                        '🔄 Authentication → Firestore',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                     ],
                   ),
                 ),
@@ -96,7 +131,7 @@ class AuthWrapper extends StatelessWidget {
                 context,
                 title: 'Lỗi đồng bộ',
                 message: 'Không thể đồng bộ với máy chủ.\nVui lòng kiểm tra kết nối và thử lại.',
-                onRetry: () => (context as Element).markNeedsBuild(),
+                onRetry: () => setState(() {}),
               );
             }
 
@@ -116,9 +151,11 @@ class AuthWrapper extends StatelessWidget {
 
             // Chuyển hướng dựa trên role
             print('✅ Redirecting to $role panel');
+            print('   Using Student ID: $studentId');
+            print('   ✨ Auto-sync enabled - changes will be reflected automatically');
 
             if (role == 'student') {
-              return ClassListPage(studentId: user.uid);
+              return ClassListPage(studentId: studentId);
             } else if (role == 'teacher') {
               return const TeacherPanel();
             } else {
@@ -135,6 +172,29 @@ class AuthWrapper extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Đồng bộ và lấy role
+  Future<String?> _syncAndGetRole(User user, String studentId) async {
+    try {
+      // Bước 1: Kiểm tra và đồng bộ nếu data cũ
+      print('🔍 Checking if sync needed...');
+      final wasSynced = await AuthSyncService.checkAndSyncIfOutdated(studentId);
+
+      if (wasSynced) {
+        print('✅ Data was synced from Authentication');
+      } else {
+        print('✅ Data already up to date');
+      }
+
+      // Bước 2: Đồng bộ đầy đủ (đảm bảo)
+      final role = await UserService.syncUserAndGetRole(user);
+
+      return role;
+    } catch (e) {
+      print('❌ Error in sync and get role: $e');
+      rethrow;
+    }
   }
 
   /// Widget hiển thị màn hình lỗi
@@ -193,6 +253,33 @@ class AuthWrapper extends StatelessWidget {
 
               if (showRetry && onRetry != null) const SizedBox(height: 16),
 
+              // Nút đồng bộ thủ công
+              OutlinedButton.icon(
+                onPressed: () async {
+                  try {
+                    await AuthSyncService.forceSyncCurrentUser();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Đã đồng bộ thành công'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    if (onRetry != null) onRetry();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Lỗi đồng bộ: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.sync),
+                label: const Text('Đồng bộ thủ công'),
+              ),
+
+              const SizedBox(height: 16),
+
               // Nút đăng xuất
               TextButton(
                 onPressed: () async {
@@ -202,27 +289,43 @@ class AuthWrapper extends StatelessWidget {
                 child: const Text('Đăng xuất'),
               ),
 
-              // DEBUG BUTTON - Uncomment khi cần tạo lại users
-              // const SizedBox(height: 32),
-              // const Divider(),
-              // const SizedBox(height: 16),
-              // ElevatedButton.icon(
-              //   onPressed: () async {
-              //     // Import CreateUsersHelper ở đầu file
-              //     await CreateUsersHelper.recreateAllUsersFromAuth();
-              //     ScaffoldMessenger.of(context).showSnackBar(
-              //       const SnackBar(
-              //         content: Text('✅ Đã tạo lại users! Check console logs'),
-              //         backgroundColor: Colors.green,
-              //       ),
-              //     );
-              //   },
-              //   icon: const Icon(Icons.build),
-              //   label: const Text('DEBUG: Tạo lại Users'),
-              //   style: ElevatedButton.styleFrom(
-              //     backgroundColor: Colors.orange,
-              //   ),
-              // ),
+              // Debug info
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Đồng bộ tự động đã bật',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Authentication ↔️ Firestore',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.blue.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -232,40 +335,29 @@ class AuthWrapper extends StatelessWidget {
 }
 
 // ============================================
-// HƯỚNG DẪN KHẮC PHỤC VẤN ĐỀ USERS
+// HƯỚNG DẪN SỬ DỤNG AUTO-SYNC
 // ============================================
 //
-// Nếu bạn đã xóa collection 'users' trong Firestore:
+// Service đồng bộ tự động đã được kích hoạt:
 //
-// CÁCH 1: Tự động (Khuyến nghị)
-// -------------------------------
-// 1. Đăng nhập lại vào app
-// 2. Hệ thống sẽ TỰ ĐỘNG tạo user document với:
-//    - Role mặc định: student
-//    - StudentId: 9 chữ số đầu email
-//    - DisplayName: từ email
+// 1. ✅ Khi user đăng nhập → Tự động tạo/cập nhật Firestore
+// 2. ✅ Khi email thay đổi → Tự động sync sang Firestore
+// 3. ✅ Khi displayName thay đổi → Tự động sync sang Firestore
+// 4. ✅ Khi emailVerified thay đổi → Tự động sync sang Firestore
+// 5. ✅ Khi user đăng xuất → Đánh dấu inactive trong Firestore
 //
-// CÁCH 2: Thủ công qua Firebase Console
-// --------------------------------------
-// 1. Vào Firebase Console > Firestore Database
-// 2. Tạo collection 'users'
-// 3. Thêm document với ID = UID từ Authentication
-// 4. Thêm các field:
-//    {
-//      "email": "student@example.com",
-//      "role": "student",
-//      "studentId": "123456789",
-//      "displayName": "Student Name",
-//      "isActive": true,
-//      "createdAt": <timestamp>,
-//      "lastLogin": <timestamp>
-//    }
+// CÁCH ĐỒNG BỘ THỦ CÔNG (nếu cần):
 //
-// CÁCH 3: Dùng Debug Helper
-// --------------------------
-// 1. Uncomment import CreateUsersHelper ở đầu file
-// 2. Uncomment DEBUG BUTTON trong _buildErrorScreen
-// 3. Chạy app và nhấn nút "DEBUG: Tạo lại Users"
-// 4. Check console logs để xem kết quả
+// // Đồng bộ current user
+// await AuthSyncService.forceSyncCurrentUser();
+//
+// // Đồng bộ một user cụ thể
+// final user = FirebaseAuth.instance.currentUser;
+// if (user != null) {
+//   await AuthSyncService.forceSyncUser(user);
+// }
+//
+// // Kiểm tra và đồng bộ nếu cần
+// await AuthSyncService.checkAndSyncIfOutdated(studentId);
 //
 // ============================================
