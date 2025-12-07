@@ -1,4 +1,4 @@
-// lib/screens/auth/login_page.dart
+// lib/screens/auth/login_page.dart - MINIMAL FIX (chỉ fix Windows popup)
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  /// Xử lý đăng nhập Microsoft
+  /// Xử lý đăng nhập Microsoft - CHỈ FIX WINDOWS POPUP
   Future<void> _handleMicrosoftLogin() async {
     setState(() {
       _isLoading = true;
@@ -41,7 +41,7 @@ class _LoginPageState extends State<LoginPage> {
       microsoftProvider.addScope('email');
       microsoftProvider.addScope('profile');
 
-      // ⚡ QUAN TRỌNG: Thêm custom parameters để force account selection
+      // ⚡ QUAN TRỌNG: ThÃªm custom parameters để force account selection
       microsoftProvider.setCustomParameters({
         'prompt': 'select_account', // Buộc hiển thị màn hình chọn tài khoản
         'login_hint': '', // Xóa hint về tài khoản trước đó
@@ -51,12 +51,12 @@ class _LoginPageState extends State<LoginPage> {
 
       // Kiểm tra platform và sử dụng method phù hợp
       if (kIsWeb) {
-        // Trên Web: Sử dụng signInWithPopup
+        // TrÃªn Web: Sử dụng signInWithPopup
         print('🌐 Using signInWithPopup for Web');
         userCredential = await _auth.signInWithPopup(microsoftProvider);
       } else {
-        // Trên Mobile/Desktop: Sử dụng signInWithProvider
-        print('📱 Using signInWithProvider for Mobile');
+        // TrÃªn Mobile/Desktop: Sử dụng signInWithProvider
+        print('📱 Using signInWithProvider for Mobile/Desktop');
         userCredential = await _auth.signInWithProvider(microsoftProvider);
       }
 
@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// Xử lý sau khi đăng nhập thành công
+  /// Xử lý sau khi đăng nhập thành công - GIỮ NGUYÊN CODE CŨ
   Future<void> _handleSuccessfulLogin(User user) async {
     print('🔄 Syncing with Firestore...');
 
@@ -141,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
 
     print('✅ Role confirmed: $role');
 
-    // Chuyển trang dựa trên role - SỬ DỤNG STUDENT ID thay vì UID
+    // Chuyển trang dựa trên role - Sử dụng STUDENT ID thay vì UID
     if (mounted) {
       print('🚀 Navigating to $role panel');
       print('   Using Student ID: $studentId');
@@ -155,32 +155,6 @@ class _LoginPageState extends State<LoginPage> {
             (route) => false,
       );
     }
-  }
-
-  void _showDialog({required String title, required String message, required bool isError}) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: isError ? Colors.red : Colors.green,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(title)),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
