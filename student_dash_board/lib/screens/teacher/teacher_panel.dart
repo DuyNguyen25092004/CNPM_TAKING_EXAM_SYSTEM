@@ -1,10 +1,8 @@
 // lib/screens/teacher/teacher_panel.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'create_quiz_page.dart';
-import 'manage_quizzes_page.dart';
-import 'view_results_page.dart';
 import 'manage_classes_page.dart';
+import 'quiz_bank_page.dart';
 import '../auth/login_page.dart';
 
 class TeacherPanel extends StatefulWidget {
@@ -20,9 +18,7 @@ class _TeacherPanelState extends State<TeacherPanel> {
 
   final List<Widget> _pages = const [
     ManageClassesPage(),
-    ManageQuizzesPage(),
-    CreateQuizPage(),
-    ViewResultsPage(),
+    QuizBankPage(),
   ];
 
   final List<NavigationDestination> _destinations = const [
@@ -32,19 +28,9 @@ class _TeacherPanelState extends State<TeacherPanel> {
       label: 'Lớp học',
     ),
     NavigationDestination(
-      icon: Icon(Icons.quiz_outlined),
-      selectedIcon: Icon(Icons.quiz),
-      label: 'Đề thi',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.add_circle_outline),
-      selectedIcon: Icon(Icons.add_circle),
-      label: 'Tạo đề',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.assessment_outlined),
-      selectedIcon: Icon(Icons.assessment),
-      label: 'Kết quả',
+      icon: Icon(Icons.library_books_outlined),
+      selectedIcon: Icon(Icons.library_books),
+      label: 'Kho đề thi',
     ),
   ];
 

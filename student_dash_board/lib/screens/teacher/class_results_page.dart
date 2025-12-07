@@ -1,17 +1,20 @@
-// lib/screens/teacher/view_results_page.dart
+// lib/screens/teacher/class_results_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ViewResultsPage extends StatefulWidget {
-  const ViewResultsPage({Key? key}) : super(key: key);
+class ClassResultsPage extends StatefulWidget {
+  final String classId;
+
+  const ClassResultsPage({Key? key, required this.classId}) : super(key: key);
 
   @override
-  State<ViewResultsPage> createState() => _ViewResultsPageState();
+  State<ClassResultsPage> createState() => _ClassResultsPageState();
 }
 
-class _ViewResultsPageState extends State<ViewResultsPage> {
+class _ClassResultsPageState extends State<ClassResultsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _selectedQuizFilter;
 
   @override
   void dispose() {
@@ -30,14 +33,14 @@ class _ViewResultsPageState extends State<ViewResultsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Kết quả thi',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                'Kết quả thi của lớp',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Tìm kiếm theo tên học sinh...',
+                  hintText: 'Tìm kiếm theo mã học sinh...',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -46,16 +49,60 @@ class _ViewResultsPageState extends State<ViewResultsPage> {
                   fillColor: Colors.white,
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
                       : null,
                 ),
                 onChanged: (value) {
                   setState(() => _searchQuery = value.toLowerCase());
+                },
+              ),
+              const SizedBox(height: 12),
+              // Quiz filter
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('classes')
+                    .doc(widget.classId)
+                    .collection('quizzes')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final quizzes = snapshot.data!.docs;
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedQuizFilter,
+                    decoration: InputDecoration(
+                      labelText: 'Lọc theo bài thi',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Tất cả bài thi'),
+                      ),
+                      ...quizzes.map((quiz) {
+                        final data = quiz.data() as Map<String, dynamic>;
+                        return DropdownMenuItem(
+                          value: quiz.id,
+                          child: Text(data['title'] ?? 'Bài thi'),
+                        );
+                      }).toList(),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _selectedQuizFilter = value);
+                    },
+                  );
                 },
               ),
             ],
@@ -65,6 +112,7 @@ class _ViewResultsPageState extends State<ViewResultsPage> {
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('submissions')
+                .where('classId', isEqualTo: widget.classId)
                 .orderBy('timestamp', descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
@@ -111,10 +159,17 @@ class _ViewResultsPageState extends State<ViewResultsPage> {
               if (_searchQuery.isNotEmpty) {
                 submissions = submissions.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final studentId = (data['studentId'] ?? '')
-                      .toString()
-                      .toLowerCase();
+                  final studentId =
+                  (data['studentId'] ?? '').toString().toLowerCase();
                   return studentId.contains(_searchQuery);
+                }).toList();
+              }
+
+              // Filter by quiz
+              if (_selectedQuizFilter != null) {
+                submissions = submissions.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return data['quizId'] == _selectedQuizFilter;
                 }).toList();
               }
 
@@ -166,7 +221,7 @@ class _ViewResultsPageState extends State<ViewResultsPage> {
                         ),
                       ),
                       title: Text(
-                        'Student: ${data['studentId'] ?? 'Unknown'}',
+                        'HS: ${data['studentId'] ?? 'Unknown'}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
@@ -230,10 +285,10 @@ class _ViewResultsPageState extends State<ViewResultsPage> {
   }
 
   Future<void> _showSubmissionDetail(
-    BuildContext context,
-    String submissionId,
-    Map<String, dynamic> submission,
-  ) async {
+      BuildContext context,
+      String submissionId,
+      Map<String, dynamic> submission,
+      ) async {
     final quizId = submission['quizId'] as String?;
 
     if (quizId == null) {
@@ -246,7 +301,6 @@ class _ViewResultsPageState extends State<ViewResultsPage> {
       return;
     }
 
-    // Fetch questions from quiz subcollection
     final questionsSnapshot = await FirebaseFirestore.instance
         .collection('quiz')
         .doc(quizId)
@@ -304,7 +358,6 @@ class _SubmissionDetailDialog extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Expanded(
@@ -334,7 +387,6 @@ class _SubmissionDetailDialog extends StatelessWidget {
             ),
             const Divider(height: 32),
 
-            // Score summary
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -374,14 +426,12 @@ class _SubmissionDetailDialog extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Questions and answers
             Expanded(
               child: ListView.builder(
                 itemCount: questions.length,
                 itemBuilder: (context, index) {
                   final questionDoc = questions[index];
-                  final questionData =
-                      questionDoc.data() as Map<String, dynamic>;
+                  final questionData = questionDoc.data() as Map<String, dynamic>;
                   final questionId = questionDoc.id;
                   final correctAnswer = questionData['correctAnswer'] ?? '';
                   final studentAnswer = studentAnswers[questionId] ?? '';
@@ -389,15 +439,12 @@ class _SubmissionDetailDialog extends StatelessWidget {
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
-                    color: isCorrect
-                        ? Colors.green.shade50
-                        : Colors.red.shade50,
+                    color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Question header
                           Row(
                             children: [
                               Container(
@@ -426,7 +473,6 @@ class _SubmissionDetailDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          // Options
                           ...List.generate(4, (i) {
                             final letter = String.fromCharCode(65 + i);
                             final options = questionData['options'] as List;
@@ -454,9 +500,7 @@ class _SubmissionDetailDialog extends StatelessWidget {
                                 color: backgroundColor ?? Colors.grey.shade50,
                                 border: Border.all(
                                   color: borderColor ?? Colors.grey.shade300,
-                                  width: (isCorrectOption || isStudentChoice)
-                                      ? 2
-                                      : 1,
+                                  width: (isCorrectOption || isStudentChoice) ? 2 : 1,
                                 ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -467,9 +511,7 @@ class _SubmissionDetailDialog extends StatelessWidget {
                                     height: 28,
                                     decoration: BoxDecoration(
                                       color: isStudentChoice || isCorrectOption
-                                          ? (isCorrectOption
-                                                ? Colors.green
-                                                : Colors.red)
+                                          ? (isCorrectOption ? Colors.green : Colors.red)
                                           : Colors.grey,
                                       shape: BoxShape.circle,
                                     ),
@@ -488,16 +530,13 @@ class _SubmissionDetailDialog extends StatelessWidget {
                                   if (icon != null)
                                     Icon(
                                       icon,
-                                      color: isCorrectOption
-                                          ? Colors.green
-                                          : Colors.red,
+                                      color: isCorrectOption ? Colors.green : Colors.red,
                                     ),
                                 ],
                               ),
                             );
                           }),
 
-                          // Student answer info
                           if (!isCorrect) ...[
                             const SizedBox(height: 8),
                             Container(
@@ -509,11 +548,7 @@ class _SubmissionDetailDialog extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
-                                    Icons.info,
-                                    color: Colors.orange,
-                                    size: 20,
-                                  ),
+                                  const Icon(Icons.info, color: Colors.orange, size: 20),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(

@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'class_create_quiz_page.dart';
+import 'class_quiz_detail_page.dart';
+import 'class_results_page.dart';
 
 class ClassDetailPage extends StatefulWidget {
   final String classId;
@@ -26,7 +29,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -37,21 +40,14 @@ class _ClassDetailPageState extends State<ClassDetailPage>
     super.dispose();
   }
 
-  // Extract 9 digits from email (before @)
   String _extractStudentId(String email) {
     final parts = email.split('@');
     if (parts.isEmpty) return '';
-
-    // Get the part before @
     final username = parts[0];
-
-    // Extract first 9 digits from username
     final digits = username.replaceAll(RegExp(r'[^0-9]'), '');
-
     if (digits.length >= 9) {
       return digits.substring(0, 9);
     }
-
     return digits;
   }
 
@@ -75,6 +71,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           tabs: const [
             Tab(icon: Icon(Icons.people), text: 'Học sinh'),
             Tab(icon: Icon(Icons.quiz), text: 'Bài thi'),
+            Tab(icon: Icon(Icons.assessment), text: 'Kết quả'),
           ],
         ),
       ),
@@ -83,18 +80,21 @@ class _ClassDetailPageState extends State<ClassDetailPage>
         children: [
           _buildStudentsTab(),
           _buildQuizzesTab(),
+          ClassResultsPage(classId: widget.classId),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: _tabController.index == 2
+          ? null
+          : FloatingActionButton.extended(
         onPressed: () {
           if (_tabController.index == 0) {
             _showAddStudentDialog();
-          } else {
-            _showAssignQuizDialog();
+          } else if (_tabController.index == 1) {
+            _showQuizOptionsDialog();
           }
         },
         icon: const Icon(Icons.add),
-        label: Text(_tabController.index == 0 ? 'Thêm học sinh' : 'Gán bài thi'),
+        label: Text(_tabController.index == 0 ? 'Thêm học sinh' : 'Thêm bài thi'),
         backgroundColor: Colors.blue,
       ),
     );
@@ -241,7 +241,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Nhấn nút "+" để gán bài thi cho lớp',
+                  'Nhấn nút "+" để tạo hoặc gán bài thi',
                   style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                 ),
               ],
@@ -261,6 +261,18 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ClassQuizDetailPage(
+                        classId: widget.classId,
+                        quizId: quiz.id,
+                        quizData: data,
+                      ),
+                    ),
+                  );
+                },
                 leading: CircleAvatar(
                   backgroundColor: Colors.green,
                   child: Text(
@@ -292,6 +304,53 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           },
         );
       },
+    );
+  }
+
+  void _showQuizOptionsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Thêm bài thi'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_circle, color: Colors.blue),
+              title: const Text('Tạo bài thi mới'),
+              subtitle: const Text('Tạo đề thi từ file PDF/TXT'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ClassCreateQuizPage(
+                      classId: widget.classId,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.library_add, color: Colors.green),
+              title: const Text('Gán bài thi có sẵn'),
+              subtitle: const Text('Chọn từ kho đề thi'),
+              onTap: () {
+                Navigator.pop(context);
+                _showAssignQuizDialog();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -367,7 +426,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.email),
               ),
-              enabled: false, // Cannot change email
+              enabled: false,
             ),
             const SizedBox(height: 16),
             TextField(
@@ -516,7 +575,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       return;
     }
 
-    // Validate email
     if (!_isValidEmail(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -527,7 +585,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       return;
     }
 
-    // Extract student ID from email
     final studentId = _extractStudentId(email);
 
     if (studentId.length < 9) {
@@ -541,12 +598,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
     }
 
     try {
-      // Check if student already exists in this class
       final existingStudent = await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
           .collection('students')
-          .doc(studentId) // Use studentId as document ID
+          .doc(studentId)
           .get();
 
       if (existingStudent.exists) {
@@ -561,12 +617,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
         return;
       }
 
-      // Add student with studentId as document ID
       await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
           .collection('students')
-          .doc(studentId) // Use studentId as document ID
+          .doc(studentId)
           .set({
         'studentId': studentId,
         'email': email,
@@ -574,7 +629,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
         'addedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update student count
       final classDoc = await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
@@ -683,7 +737,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           .doc(studentDocId)
           .delete();
 
-      // Update student count
       final classDoc = await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
@@ -720,7 +773,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   Future<void> _assignQuizToClass(
       String quizId, Map<String, dynamic> quizData) async {
     try {
-      // Check if quiz already assigned
       final existingQuiz = await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
@@ -752,7 +804,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
         'assignedAt': FieldValue.serverTimestamp(),
       });
 
-      // Update quiz count
       final classDoc = await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
@@ -819,7 +870,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           .doc(quizId)
           .delete();
 
-      // Update quiz count
       final classDoc = await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
