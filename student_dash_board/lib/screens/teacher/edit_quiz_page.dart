@@ -7,7 +7,7 @@ class EditQuizPage extends StatefulWidget {
   final Map<String, dynamic> quizData;
 
   const EditQuizPage({Key? key, required this.quizId, required this.quizData})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<EditQuizPage> createState() => _EditQuizPageState();
@@ -47,7 +47,6 @@ class _EditQuizPageState extends State<EditQuizPage> {
           .collection('questions')
           .get();
 
-      // Sort by order if available
       final sortedDocs = questionsSnapshot.docs.toList();
       sortedDocs.sort((a, b) {
         final orderA = a.data()['order'] as int?;
@@ -74,8 +73,18 @@ class _EditQuizPageState extends State<EditQuizPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Lỗi khi tải câu hỏi: $e'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Lỗi khi tải câu hỏi: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -86,145 +95,322 @@ class _EditQuizPageState extends State<EditQuizPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chỉnh sửa đề thi'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isSaving ? null : _saveQuiz,
-            tooltip: 'Lưu thay đổi',
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.orange.shade50,
+              Colors.white,
+              Colors.yellow.shade50,
+            ],
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Quiz info card
-                    Card(
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Thông tin đề thi',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _titleController,
-                              decoration: const InputDecoration(
-                                labelText: 'Tên đề thi',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.title),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Vui lòng nhập tên đề thi';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: _durationController,
-                              decoration: const InputDecoration(
-                                labelText: 'Thời gian làm bài (phút)',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.timer),
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Vui lòng nhập thời gian';
-                                }
-                                final duration = int.tryParse(value);
-                                if (duration == null || duration <= 0) {
-                                  return 'Thời gian phải là số dương';
-                                }
-                                return null;
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Questions header
+                  ],
+                ),
+                child: Column(
+                  children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Câu hỏi (${_questions.length})',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.orange.shade400, Colors.orange.shade600],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orange.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            size: 28,
+                            color: Colors.white,
                           ),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: _addNewQuestion,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Thêm câu hỏi'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Chỉnh sửa đề thi',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Cập nhật thông tin và câu hỏi',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.save_rounded,
+                              color: Colors.green.shade700,
+                            ),
+                            tooltip: 'Lưu thay đổi',
+                            onPressed: _isSaving ? null : _saveQuiz,
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Questions list
-                    ..._questions.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final question = entry.value;
-                      return _buildQuestionCard(index, question);
-                    }).toList(),
-
-                    const SizedBox(height: 80),
                   ],
                 ),
               ),
-            ),
-      floatingActionButton: FloatingActionButton.extended(
+
+              // Content
+              Expanded(
+                child: _isLoading
+                    ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.orange.shade600),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Đang tải câu hỏi...'),
+                    ],
+                  ),
+                )
+                    : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Quiz info card
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      Icons.info_outline,
+                                      color: Colors.orange.shade700,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Thông tin đề thi',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: _titleController,
+                                decoration: InputDecoration(
+                                  labelText: 'Tên đề thi',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  prefixIcon: const Icon(Icons.title),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Vui lòng nhập tên đề thi';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _durationController,
+                                decoration: InputDecoration(
+                                  labelText: 'Thời gian làm bài (phút)',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  prefixIcon: const Icon(Icons.timer),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Vui lòng nhập thời gian';
+                                  }
+                                  final duration = int.tryParse(value);
+                                  if (duration == null || duration <= 0) {
+                                    return 'Thời gian phải là số dương';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Questions header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.quiz,
+                                    color: Colors.blue.shade700,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Câu hỏi (${_questions.length})',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _addNewQuestion,
+                              icon: const Icon(Icons.add, size: 20),
+                              label: const Text('Thêm câu hỏi'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green.shade600,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Questions list
+                        ..._questions.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final question = entry.value;
+                          return _buildQuestionCard(index, question);
+                        }).toList(),
+
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: _isLoading
+          ? null
+          : FloatingActionButton.extended(
         onPressed: _isSaving ? null : _saveQuiz,
         icon: _isSaving
             ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          ),
+        )
             : const Icon(Icons.save),
         label: Text(_isSaving ? 'Đang lưu...' : 'Lưu thay đổi'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.green.shade600,
       ),
     );
   }
 
   Widget _buildQuestionCard(int index, Map<String, dynamic> question) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -232,9 +418,11 @@ class _EditQuizPageState extends State<EditQuizPage> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.blue,
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade400, Colors.blue.shade600],
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -242,14 +430,21 @@ class _EditQuizPageState extends State<EditQuizPage> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteQuestion(index),
-                  tooltip: 'Xóa câu hỏi',
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.delete_rounded, color: Colors.red.shade700),
+                    onPressed: () => _deleteQuestion(index),
+                    tooltip: 'Xóa câu hỏi',
+                  ),
                 ),
               ],
             ),
@@ -259,10 +454,14 @@ class _EditQuizPageState extends State<EditQuizPage> {
             // Question text
             TextFormField(
               initialValue: question['question'],
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Nội dung câu hỏi',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.help_outline),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.help_outline),
+                filled: true,
+                fillColor: Colors.grey.shade50,
               ),
               maxLines: 3,
               onChanged: (value) {
@@ -287,17 +486,22 @@ class _EditQuizPageState extends State<EditQuizPage> {
               final isCorrect = question['correctAnswer'] == letter;
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Radio<String>(
-                      value: letter,
-                      groupValue: question['correctAnswer'],
-                      onChanged: (value) {
-                        setState(() {
-                          _questions[index]['correctAnswer'] = value!;
-                        });
-                      },
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Radio<String>(
+                        value: letter,
+                        groupValue: question['correctAnswer'],
+                        onChanged: (value) {
+                          setState(() {
+                            _questions[index]['correctAnswer'] = value!;
+                          });
+                        },
+                        activeColor: Colors.green,
+                      ),
                     ),
                     Expanded(
                       child: TextFormField(
@@ -305,15 +509,36 @@ class _EditQuizPageState extends State<EditQuizPage> {
                         decoration: InputDecoration(
                           labelText: 'Đáp án $letter',
                           border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: isCorrect ? Colors.green : Colors.grey,
+                              color: isCorrect
+                                  ? Colors.green
+                                  : Colors.grey.shade300,
                               width: isCorrect ? 2 : 1,
                             ),
                           ),
-                          filled: isCorrect,
+                          filled: true,
                           fillColor: isCorrect
                               ? Colors.green.withOpacity(0.1)
-                              : null,
+                              : Colors.grey.shade50,
+                          prefixIcon: Container(
+                            margin: const EdgeInsets.all(12),
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: isCorrect ? Colors.green : Colors.grey.shade400,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                letter,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                         onChanged: (value) {
                           setState(() {
@@ -333,14 +558,12 @@ class _EditQuizPageState extends State<EditQuizPage> {
               );
             }),
 
-            const SizedBox(height: 8),
-
             // Correct answer indicator
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.green),
               ),
               child: Row(
@@ -366,14 +589,13 @@ class _EditQuizPageState extends State<EditQuizPage> {
   void _addNewQuestion() {
     setState(() {
       _questions.add({
-        'id': null, // New question, no ID yet
+        'id': null,
         'question': '',
         'options': ['', '', '', ''],
         'correctAnswer': 'A',
       });
     });
 
-    // Scroll to bottom
     Future.delayed(const Duration(milliseconds: 300), () {
       Scrollable.ensureVisible(
         context,
@@ -385,31 +607,126 @@ class _EditQuizPageState extends State<EditQuizPage> {
   void _deleteQuestion(int index) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc muốn xóa câu ${index + 1}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.red.shade50,
+                Colors.white,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
           ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _questions.removeAt(index);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Đã xóa câu hỏi'),
-                  backgroundColor: Colors.green,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  shape: BoxShape.circle,
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa'),
+                child: Icon(
+                  Icons.warning_rounded,
+                  color: Colors.red.shade700,
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Xác nhận xóa',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Bạn có chắc muốn xóa câu ${index + 1}?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _questions.removeAt(index);
+                        });
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Row(
+                              children: [
+                                Icon(Icons.check_circle, color: Colors.white),
+                                SizedBox(width: 12),
+                                Text('Đã xóa câu hỏi'),
+                              ],
+                            ),
+                            backgroundColor: Colors.green.shade600,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.red.shade600,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Xóa',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -417,22 +734,36 @@ class _EditQuizPageState extends State<EditQuizPage> {
   Future<void> _saveQuiz() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Vui lòng kiểm tra lại thông tin'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.warning_rounded, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Vui lòng kiểm tra lại thông tin'),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
     }
 
-    // Check if all questions have valid data
+    // Validate questions
     for (var i = 0; i < _questions.length; i++) {
       final question = _questions[i];
       if (question['question'].toString().trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('⚠️ Câu ${i + 1} chưa có nội dung'),
-            backgroundColor: Colors.orange,
+            content: Text('Câu ${i + 1} chưa có nội dung'),
+            backgroundColor: Colors.orange.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
         return;
@@ -442,8 +773,12 @@ class _EditQuizPageState extends State<EditQuizPage> {
       if (options.any((opt) => opt.trim().isEmpty)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('⚠️ Câu ${i + 1} chưa đủ 4 đáp án'),
-            backgroundColor: Colors.orange,
+            content: Text('Câu ${i + 1} chưa đủ 4 đáp án'),
+            backgroundColor: Colors.orange.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
         return;
@@ -457,7 +792,6 @@ class _EditQuizPageState extends State<EditQuizPage> {
           .collection('quiz')
           .doc(widget.quizId);
 
-      // Update quiz info
       await quizRef.update({
         'title': _titleController.text.trim(),
         'duration': int.parse(_durationController.text),
@@ -465,15 +799,11 @@ class _EditQuizPageState extends State<EditQuizPage> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // Get existing questions
       final existingQuestions = await quizRef.collection('questions').get();
-
-      // Delete all existing questions
       for (var doc in existingQuestions.docs) {
         await doc.reference.delete();
       }
 
-      // Add updated questions
       for (var question in _questions) {
         await quizRef.collection('questions').add({
           'question': question['question'].toString().trim(),
@@ -486,19 +816,39 @@ class _EditQuizPageState extends State<EditQuizPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Đã lưu thay đổi thành công!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Đã lưu thay đổi thành công!'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Lỗi khi lưu: $e'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Lỗi khi lưu: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }

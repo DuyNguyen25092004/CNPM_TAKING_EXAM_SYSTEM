@@ -26,30 +26,61 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Header & Filters
         Container(
-          padding: const EdgeInsets.all(16),
-          color: Colors.blue.shade50,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Kết quả thi của lớp',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.analytics_rounded, color: Colors.orange.shade700, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Kết quả thi',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+
+              // Search Bar
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Tìm kiếm theo mã học sinh...',
-                  prefixIcon: const Icon(Icons.search),
+                  hintText: 'Tìm kiếm mã học sinh...',
+                  prefixIcon: const Icon(Icons.search_rounded),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                    icon: const Icon(Icons.clear),
+                    icon: const Icon(Icons.clear_rounded),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
@@ -62,7 +93,8 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                 },
               ),
               const SizedBox(height: 12),
-              // Quiz filter
+
+              // Quiz Filter
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('classes')
@@ -76,38 +108,50 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
 
                   final quizzes = snapshot.data!.docs;
 
-                  return DropdownButtonFormField<String>(
-                    value: _selectedQuizFilter,
-                    decoration: InputDecoration(
-                      labelText: 'Lọc theo bài thi',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Tất cả bài thi'),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedQuizFilter,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          prefixIcon: Icon(Icons.filter_list_rounded),
+                          contentPadding: EdgeInsets.symmetric(vertical: 4),
+                        ),
+                        hint: const Text('Lọc theo bài thi'),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Tất cả bài thi'),
+                          ),
+                          ...quizzes.map((quiz) {
+                            final data = quiz.data() as Map<String, dynamic>;
+                            return DropdownMenuItem(
+                              value: quiz.id,
+                              child: Text(
+                                data['title'] ?? 'Bài thi',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedQuizFilter = value);
+                        },
                       ),
-                      ...quizzes.map((quiz) {
-                        final data = quiz.data() as Map<String, dynamic>;
-                        return DropdownMenuItem(
-                          value: quiz.id,
-                          child: Text(data['title'] ?? 'Bài thi'),
-                        );
-                      }).toList(),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _selectedQuizFilter = value);
-                    },
+                    ),
                   );
                 },
               ),
             ],
           ),
         ),
+
+        // Results List
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -117,7 +161,11 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade600),
+                  ),
+                );
               }
 
               if (snapshot.hasError) {
@@ -125,47 +173,29 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 60, color: Colors.red),
+                      Icon(Icons.error_outline_rounded, size: 60, color: Colors.red.shade300),
                       const SizedBox(height: 16),
-                      Text('Lỗi: ${snapshot.error}'),
+                      Text('Đã xảy ra lỗi tải dữ liệu', style: TextStyle(color: Colors.grey[600])),
                     ],
                   ),
                 );
               }
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.assignment_outlined,
-                        size: 100,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Chưa có bài thi nào',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                );
+                return _buildEmptyState('Chưa có bài thi nào được nộp');
               }
 
               var submissions = snapshot.data!.docs;
 
-              // Filter by search
+              // Filter logic
               if (_searchQuery.isNotEmpty) {
                 submissions = submissions.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final studentId =
-                  (data['studentId'] ?? '').toString().toLowerCase();
+                  final studentId = (data['studentId'] ?? '').toString().toLowerCase();
                   return studentId.contains(_searchQuery);
                 }).toList();
               }
 
-              // Filter by quiz
               if (_selectedQuizFilter != null) {
                 submissions = submissions.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
@@ -174,23 +204,7 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
               }
 
               if (submissions.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.search_off,
-                        size: 100,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Không tìm thấy kết quả',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                );
+                return _buildEmptyState('Không tìm thấy kết quả phù hợp');
               }
 
               return ListView.builder(
@@ -202,60 +216,123 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                   final score = data['score'] ?? 0;
                   final total = data['totalQuestions'] ?? 1;
                   final percentage = (score / total * 100);
+                  final scoreColor = _getScoreColor(percentage);
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 2,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: CircleAvatar(
-                        radius: 30,
-                        backgroundColor: _getScoreColor(percentage),
-                        child: Text(
-                          '$score/$total',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => _showSubmissionDetail(context, doc.id, data),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              // Score Circle
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [scoreColor.withOpacity(0.8), scoreColor],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: scoreColor.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '${percentage.toStringAsFixed(0)}%',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Text(
+                                      '$score/$total',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'HS: ${data['studentId'] ?? 'Unknown'}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      data['quizTitle'] ?? 'Bài thi',
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[500]),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _formatDate(data['timestamp']),
+                                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Action
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(Icons.visibility_rounded, color: Colors.blue.shade700, size: 24),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      title: Text(
-                        'HS: ${data['studentId'] ?? 'Unknown'}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(data['quizTitle'] ?? 'N/A'),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Điểm: ${percentage.toStringAsFixed(1)}%',
-                            style: TextStyle(
-                              color: _getScoreColor(percentage),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDate(data['timestamp']),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.visibility, color: Colors.blue),
-                        tooltip: 'Xem chi tiết',
-                        onPressed: () {
-                          _showSubmissionDetail(context, doc.id, data);
-                        },
                       ),
                     ),
                   );
@@ -268,10 +345,33 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
     );
   }
 
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.assignment_outlined, size: 80, color: Colors.grey.shade300),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.grey[500], fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getScoreColor(double percentage) {
-    if (percentage >= 80) return Colors.green;
-    if (percentage >= 50) return Colors.orange;
-    return Colors.red;
+    if (percentage >= 80) return Colors.green.shade600;
+    if (percentage >= 50) return Colors.orange.shade600;
+    return Colors.red.shade600;
   }
 
   String _formatDate(dynamic timestamp) {
@@ -291,15 +391,7 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
       ) async {
     final quizId = submission['quizId'] as String?;
 
-    if (quizId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Không tìm thấy thông tin đề thi'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (quizId == null) return;
 
     final questionsSnapshot = await FirebaseFirestore.instance
         .collection('quiz')
@@ -308,16 +400,6 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
         .get();
 
     if (!context.mounted) return;
-
-    if (questionsSnapshot.docs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Không tìm thấy câu hỏi'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     final studentAnswers = submission['answers'] as Map<String, dynamic>? ?? {};
 
@@ -351,83 +433,92 @@ class _SubmissionDetailDialog extends StatelessWidget {
     final timeSpent = submission['timeSpent'] ?? 0;
 
     return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.9,
-        padding: const EdgeInsets.all(24),
+        width: MediaQuery.of(context).size.width * 0.85,
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: Colors.white,
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Chi tiết bài thi - ${submission['studentId']}',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        submission['quizTitle'] ?? 'N/A',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const Divider(height: 32),
-
+            // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: _getScoreColor(percentage).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _getScoreColor(percentage)),
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade500, Colors.blue.shade700],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildScoreStat(
-                    icon: Icons.check_circle,
-                    label: 'Đúng',
-                    value: '$score',
-                    color: Colors.green,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.assignment_turned_in_rounded, color: Colors.white, size: 28),
                   ),
-                  _buildScoreStat(
-                    icon: Icons.cancel,
-                    label: 'Sai',
-                    value: '${total - score}',
-                    color: Colors.red,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chi tiết bài làm',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withOpacity(0.95),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          submission['quizTitle'] ?? 'N/A',
+                          style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.8)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                  _buildScoreStat(
-                    icon: Icons.percent,
-                    label: 'Điểm',
-                    value: '${percentage.toStringAsFixed(1)}%',
-                    color: _getScoreColor(percentage),
-                  ),
-                  _buildScoreStat(
-                    icon: Icons.timer,
-                    label: 'Thời gian',
-                    value: _formatTime(timeSpent),
-                    color: Colors.blue,
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
 
+            // Stats
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(Icons.check_circle_rounded, '$score', 'Đúng', Colors.green),
+                  _buildStatItem(Icons.cancel_rounded, '${total - score}', 'Sai', Colors.red),
+                  _buildStatItem(Icons.timer_rounded, _formatTime(timeSpent), 'Thời gian', Colors.blue),
+                  _buildStatItem(Icons.grade_rounded, '${percentage.toStringAsFixed(1)}%', 'Điểm số', Colors.orange),
+                ],
+              ),
+            ),
+
+            // Questions List
             Expanded(
               child: ListView.builder(
+                padding: const EdgeInsets.all(20),
                 itemCount: questions.length,
                 itemBuilder: (context, index) {
                   final questionDoc = questions[index];
@@ -437,136 +528,138 @@ class _SubmissionDetailDialog extends StatelessWidget {
                   final studentAnswer = studentAnswers[questionId] ?? '';
                   final isCorrect = studentAnswer == correctAnswer;
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isCorrect ? Colors.green.shade200 : Colors.red.shade200,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isCorrect ? Colors.green : Colors.red).withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Question Header
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(14),
+                              topRight: Radius.circular(14),
+                            ),
+                          ),
+                          child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: isCorrect ? Colors.green : Colors.red,
-                                  borderRadius: BorderRadius.circular(4),
+                                  color: isCorrect ? Colors.green.shade100 : Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Icon(
-                                  isCorrect ? Icons.check : Icons.close,
-                                  color: Colors.white,
-                                  size: 20,
+                                child: Text(
+                                  'Câu ${index + 1}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: isCorrect ? Colors.green.shade800 : Colors.red.shade800,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Câu ${index + 1}: ${questionData['question']}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                                  questionData['question'],
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                        ),
 
-                          ...List.generate(4, (i) {
-                            final letter = String.fromCharCode(65 + i);
-                            final options = questionData['options'] as List;
-                            final isCorrectOption = letter == correctAnswer;
-                            final isStudentChoice = letter == studentAnswer;
+                        // Options
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: List.generate(4, (i) {
+                              final letter = String.fromCharCode(65 + i);
+                              final options = questionData['options'] as List;
+                              final isCorrectOption = letter == correctAnswer;
+                              final isStudentChoice = letter == studentAnswer;
 
-                            Color? backgroundColor;
-                            Color? borderColor;
-                            IconData? icon;
+                              Color bgColor = Colors.white;
+                              Color borderColor = Colors.grey.shade200;
+                              Color textColor = Colors.black87;
+                              IconData? icon;
 
-                            if (isCorrectOption) {
-                              backgroundColor = Colors.green.shade100;
-                              borderColor = Colors.green;
-                              icon = Icons.check_circle;
-                            } else if (isStudentChoice && !isCorrect) {
-                              backgroundColor = Colors.red.shade100;
-                              borderColor = Colors.red;
-                              icon = Icons.cancel;
-                            }
+                              if (isCorrectOption) {
+                                bgColor = Colors.green.shade50;
+                                borderColor = Colors.green.shade400;
+                                textColor = Colors.green.shade800;
+                                icon = Icons.check_circle_rounded;
+                              } else if (isStudentChoice && !isCorrect) {
+                                bgColor = Colors.red.shade50;
+                                borderColor = Colors.red.shade400;
+                                textColor = Colors.red.shade800;
+                                icon = Icons.cancel_rounded;
+                              } else if (isStudentChoice) {
+                                // Student chose correct answer (handled by first if, but for safety)
+                                bgColor = Colors.green.shade50;
+                                borderColor = Colors.green.shade400;
+                              }
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: backgroundColor ?? Colors.grey.shade50,
-                                border: Border.all(
-                                  color: borderColor ?? Colors.grey.shade300,
-                                  width: (isCorrectOption || isStudentChoice) ? 2 : 1,
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: bgColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: borderColor),
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      color: isStudentChoice || isCorrectOption
-                                          ? (isCorrectOption ? Colors.green : Colors.red)
-                                          : Colors.grey,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        letter,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: isCorrectOption
+                                            ? Colors.green
+                                            : (isStudentChoice ? Colors.red : Colors.grey.shade300),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          letter,
+                                          style: TextStyle(
+                                            color: isStudentChoice || isCorrectOption ? Colors.white : Colors.grey.shade700,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(child: Text(options[i])),
-                                  if (icon != null)
-                                    Icon(
-                                      icon,
-                                      color: isCorrectOption ? Colors.green : Colors.red,
-                                    ),
-                                ],
-                              ),
-                            );
-                          }),
-
-                          if (!isCorrect) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade50,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.orange),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.info, color: Colors.orange, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      studentAnswer.isEmpty
-                                          ? 'Học sinh chưa trả lời'
-                                          : 'Học sinh chọn: $studentAnswer (Sai)',
-                                      style: const TextStyle(
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.w500,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        options[i],
+                                        style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                                    if (icon != null) Icon(icon, color: borderColor, size: 20),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -578,33 +671,28 @@ class _SubmissionDetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreStat({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
+  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
     return Column(
       children: [
-        Icon(icon, color: color, size: 32),
-        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
         ),
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
       ],
     );
-  }
-
-  Color _getScoreColor(double percentage) {
-    if (percentage >= 80) return Colors.green;
-    if (percentage >= 50) return Colors.orange;
-    return Colors.red;
   }
 
   String _formatTime(int seconds) {
