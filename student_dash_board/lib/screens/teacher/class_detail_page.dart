@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'class_create_quiz_page.dart';
 import 'class_quiz_detail_page.dart';
 import 'class_results_page.dart';
+import '../../services/quiz_schedule_service.dart';
+import '../../models/quiz_schedule_model.dart';
 
 class ClassDetailPage extends StatefulWidget {
   final String classId;
@@ -81,11 +83,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade50,
-              Colors.white,
-              Colors.purple.shade50,
-            ],
+            colors: [Colors.blue.shade50, Colors.white, Colors.purple.shade50],
           ),
         ),
         child: SafeArea(
@@ -117,7 +115,10 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Colors.blue.shade400, Colors.blue.shade600],
+                              colors: [
+                                Colors.blue.shade400,
+                                Colors.blue.shade600,
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
@@ -224,21 +225,24 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       floatingActionButton: _tabController.index == 2
           ? null
           : FloatingActionButton.extended(
-        onPressed: () {
-          if (_tabController.index == 0) {
-            _showAddStudentDialog();
-          } else if (_tabController.index == 1) {
-            _showQuizOptionsDialog();
-          }
-        },
-        icon: Icon(fabIcon, size: 24),
-        label: Text(
-          fabLabel,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: fabColor,
-        elevation: 4,
-      ),
+              onPressed: () {
+                if (_tabController.index == 0) {
+                  _showAddStudentDialog();
+                } else if (_tabController.index == 1) {
+                  _showQuizOptionsDialog();
+                }
+              },
+              icon: Icon(fabIcon, size: 24),
+              label: Text(
+                fabLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: fabColor,
+              elevation: 4,
+            ),
     );
   }
 
@@ -292,10 +296,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                 const SizedBox(height: 8),
                 Text(
                   'Nhấn "Thêm học sinh" để bắt đầu',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -373,7 +374,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit_rounded, size: 20, color: Colors.blue),
+                          Icon(
+                            Icons.edit_rounded,
+                            size: 20,
+                            color: Colors.blue,
+                          ),
                           SizedBox(width: 12),
                           Text('Chỉnh sửa'),
                         ],
@@ -383,7 +388,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_rounded, size: 20, color: Colors.red),
+                          Icon(
+                            Icons.delete_rounded,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 12),
                           Text('Xóa', style: TextStyle(color: Colors.red)),
                         ],
@@ -455,10 +464,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                 const SizedBox(height: 8),
                 Text(
                   'Nhấn "Thêm bài thi" để bắt đầu',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -474,83 +480,145 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             final quiz = quizzes[index];
             final data = quiz.data() as Map<String, dynamic>;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+            return _buildQuizCard(quiz.id, data);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildQuizCard(String quizId, Map<String, dynamic> data) {
+    return FutureBuilder<QuizSchedule?>(
+      future: QuizScheduleService.getSchedule(widget.classId, quizId),
+      builder: (context, scheduleSnapshot) {
+        final schedule = scheduleSnapshot.data;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ClassQuizDetailPage(
-                        classId: widget.classId,
-                        quizId: quiz.id,
-                        quizData: data,
+            ],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ClassQuizDetailPage(
+                    classId: widget.classId,
+                    quizId: quizId,
+                    quizData: data,
+                  ),
+                ),
+              );
+            },
+            leading: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green.shade400, Colors.green.shade600],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${data['questionCount'] ?? 0}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                  );
-                },
-                leading: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.green.shade400, Colors.green.shade600],
+                    const Text(
+                      'câu',
+                      style: TextStyle(fontSize: 11, color: Colors.white),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${data['questionCount'] ?? 0}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const Text(
-                          'câu',
-                          style: TextStyle(fontSize: 11, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-                title: Text(
-                  data['title'] ?? 'Bài thi',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                subtitle: Row(
+              ),
+            ),
+            title: Text(
+              data['title'] ?? 'Bài thi',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Row(
                   children: [
                     Icon(Icons.timer, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text('${data['duration'] ?? 0} phút'),
                   ],
                 ),
-                trailing: IconButton(
-                  icon: Icon(Icons.delete_rounded, color: Colors.red.shade700),
-                  onPressed: () => _removeQuizFromClass(quiz.id, data),
-                ),
-              ),
-            );
-          },
+                if (schedule != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getScheduleColor(schedule).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: _getScheduleColor(schedule)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getScheduleIcon(schedule),
+                          size: 12,
+                          color: _getScheduleColor(schedule),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          schedule.statusText,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: _getScheduleColor(schedule),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.delete_rounded, color: Colors.red.shade700),
+              onPressed: () => _removeQuizFromClass(quizId, data),
+            ),
+          ),
         );
       },
     );
+  }
+
+  Color _getScheduleColor(QuizSchedule schedule) {
+    if (schedule.isClosed) return Colors.red;
+    if (schedule.isOpen) return Colors.green;
+    return Colors.orange;
+  }
+
+  IconData _getScheduleIcon(QuizSchedule schedule) {
+    if (schedule.isClosed) return Icons.lock;
+    if (schedule.isOpen) return Icons.lock_open;
+    return Icons.schedule;
   }
 
   void _showQuizOptionsDialog() {
@@ -581,13 +649,20 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.quiz_rounded, color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.quiz_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
                     child: Text(
                       'Thêm bài thi',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -599,9 +674,8 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ClassCreateQuizPage(
-                        classId: widget.classId,
-                      ),
+                      builder: (context) =>
+                          ClassCreateQuizPage(classId: widget.classId),
                     ),
                   );
                 },
@@ -621,7 +695,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                           color: Colors.blue.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.add_circle, color: Colors.blue.shade700, size: 28),
+                        child: Icon(
+                          Icons.add_circle,
+                          color: Colors.blue.shade700,
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const Expanded(
@@ -630,14 +708,27 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                           children: [
                             Text(
                               'Tạo bài thi mới',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                             SizedBox(height: 4),
-                            Text('Tạo đề thi từ file PDF/TXT', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                            Text(
+                              'Tạo đề thi từ file PDF/TXT',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
                     ],
                   ),
                 ),
@@ -664,7 +755,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                           color: Colors.green.shade100,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.library_add, color: Colors.green.shade700, size: 28),
+                        child: Icon(
+                          Icons.library_add,
+                          color: Colors.green.shade700,
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const Expanded(
@@ -673,14 +768,27 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                           children: [
                             Text(
                               'Gán bài thi có sẵn',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                             SizedBox(height: 4),
-                            Text('Chọn từ kho đề thi', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                            Text(
+                              'Chọn từ kho đề thi',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[600]),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
                     ],
                   ),
                 ),
@@ -693,9 +801,14 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: const Text('Hủy', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Hủy',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -736,11 +849,21 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.person_add_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
-                    child: Text('Thêm học sinh', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Thêm học sinh',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -752,7 +875,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                   hintText: 'VD: 123456789@student.edu.vn',
                   helperText: '9 chữ số đầu email sẽ là mã học sinh',
                   prefixIcon: const Icon(Icons.email),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                 ),
@@ -764,7 +889,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                   labelText: 'Tên học sinh',
                   hintText: 'VD: Nguyễn Văn A',
                   prefixIcon: const Icon(Icons.person),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                 ),
@@ -777,10 +904,21 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Hủy', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -791,9 +929,17 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.blue.shade600,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Thêm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Thêm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -832,15 +978,28 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.orange.shade400, Colors.orange.shade600],
+                        colors: [
+                          Colors.orange.shade400,
+                          Colors.orange.shade600,
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.edit_rounded, color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
-                    child: Text('Chỉnh sửa', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Chỉnh sửa',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -850,7 +1009,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                 decoration: InputDecoration(
                   labelText: 'Email',
                   prefixIcon: const Icon(Icons.email),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   filled: true,
                   fillColor: Colors.grey.shade100,
                 ),
@@ -862,7 +1023,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                 decoration: InputDecoration(
                   labelText: 'Tên học sinh',
                   prefixIcon: const Icon(Icons.person),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                 ),
@@ -875,10 +1038,21 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Hủy', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -889,9 +1063,17 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.orange.shade600,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Lưu', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Lưu',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -936,15 +1118,28 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.green.shade400, Colors.green.shade600],
+                          colors: [
+                            Colors.green.shade400,
+                            Colors.green.shade600,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.library_books_rounded, color: Colors.white, size: 28),
+                      child: const Icon(
+                        Icons.library_books_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     const Expanded(
-                      child: Text('Chọn bài thi', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        'Chọn bài thi',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -963,13 +1158,17 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade600),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.green.shade600,
+                          ),
                         ),
                       );
                     }
 
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(child: Text('Không có bài thi nào khả dụng'));
+                      return const Center(
+                        child: Text('Không có bài thi nào khả dụng'),
+                      );
                     }
 
                     final quizzes = snapshot.data!.docs;
@@ -1001,25 +1200,40 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                               height: 56,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Colors.green.shade400, Colors.green.shade600],
+                                  colors: [
+                                    Colors.green.shade400,
+                                    Colors.green.shade600,
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Center(
                                 child: Text(
                                   '${data['questionCount'] ?? 0}',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                  ),
                                 ),
                               ),
                             ),
-                            title: Text(data['title'] ?? 'Bài thi', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: Text(
+                              data['title'] ?? 'Bài thi',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             subtitle: Text('${data['duration'] ?? 0} phút'),
                             trailing: ElevatedButton(
-                              onPressed: () => _assignQuizToClass(quiz.id, data),
+                              onPressed: () =>
+                                  _assignQuizToClass(quiz.id, data),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green.shade600,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               child: const Text('Gán'),
                             ),
@@ -1047,7 +1261,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           content: const Text('⚠️ Vui lòng nhập đầy đủ thông tin'),
           backgroundColor: Colors.orange.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -1059,7 +1275,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           content: const Text('⚠️ Email không hợp lệ'),
           backgroundColor: Colors.orange.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -1072,7 +1290,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           content: const Text('⚠️ Email phải chứa ít nhất 9 chữ số'),
           backgroundColor: Colors.orange.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -1093,7 +1313,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
               content: const Text('⚠️ Học sinh đã tồn tại trong lớp'),
               backgroundColor: Colors.orange.shade600,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
@@ -1106,11 +1328,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           .collection('students')
           .doc(studentId)
           .set({
-        'studentId': studentId,
-        'email': email,
-        'name': name,
-        'addedAt': FieldValue.serverTimestamp(),
-      });
+            'studentId': studentId,
+            'email': email,
+            'name': name,
+            'addedAt': FieldValue.serverTimestamp(),
+          });
 
       final classDoc = await FirebaseFirestore.instance
           .collection('classes')
@@ -1121,9 +1343,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
-          .update({
-        'studentCount': currentCount + 1,
-      });
+          .update({'studentCount': currentCount + 1});
 
       if (mounted) {
         Navigator.pop(context);
@@ -1132,7 +1352,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: Text('✅ Thêm học sinh thành công! ID: $studentId'),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1143,7 +1365,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: Text('❌ Lỗi: $e'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1157,7 +1381,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           content: const Text('⚠️ Vui lòng nhập tên học sinh'),
           backgroundColor: Colors.orange.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -1169,9 +1395,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           .doc(widget.classId)
           .collection('students')
           .doc(studentDocId)
-          .update({
-        'name': _studentNameController.text.trim(),
-      });
+          .update({'name': _studentNameController.text.trim()});
 
       if (mounted) {
         Navigator.pop(context);
@@ -1180,7 +1404,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: const Text('✅ Cập nhật học sinh thành công!'),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1191,7 +1417,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: Text('❌ Lỗi: $e'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1199,7 +1427,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 
   Future<void> _deleteStudent(
-      String studentDocId, Map<String, dynamic> data) async {
+    String studentDocId,
+    Map<String, dynamic> data,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => Dialog(
@@ -1223,7 +1453,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                   color: Colors.red.shade100,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.warning_rounded, color: Colors.red.shade700, size: 48),
+                child: Icon(
+                  Icons.warning_rounded,
+                  color: Colors.red.shade700,
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -1244,10 +1478,18 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       onPressed: () => Navigator.pop(context, false),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Hủy', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1258,9 +1500,14 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.red.shade600,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Xóa', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Xóa',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -1290,9 +1537,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
-          .update({
-        'studentCount': currentCount > 0 ? currentCount - 1 : 0,
-      });
+          .update({'studentCount': currentCount > 0 ? currentCount - 1 : 0});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1300,7 +1545,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: const Text('✅ Đã xóa học sinh'),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1311,7 +1558,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: Text('❌ Lỗi: $e'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1319,7 +1568,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 
   Future<void> _assignQuizToClass(
-      String quizId, Map<String, dynamic> quizData) async {
+    String quizId,
+    Map<String, dynamic> quizData,
+  ) async {
     try {
       final existingQuiz = await FirebaseFirestore.instance
           .collection('classes')
@@ -1335,7 +1586,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
               content: const Text('⚠️ Bài thi đã được gán cho lớp này'),
               backgroundColor: Colors.orange.shade600,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
@@ -1348,11 +1601,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           .collection('quizzes')
           .doc(quizId)
           .set({
-        'title': quizData['title'],
-        'questionCount': quizData['questionCount'],
-        'duration': quizData['duration'],
-        'assignedAt': FieldValue.serverTimestamp(),
-      });
+            'title': quizData['title'],
+            'questionCount': quizData['questionCount'],
+            'duration': quizData['duration'],
+            'assignedAt': FieldValue.serverTimestamp(),
+          });
 
       final classDoc = await FirebaseFirestore.instance
           .collection('classes')
@@ -1363,9 +1616,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
-          .update({
-        'quizCount': currentCount + 1,
-      });
+          .update({'quizCount': currentCount + 1});
 
       if (mounted) {
         Navigator.pop(context);
@@ -1374,7 +1625,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: const Text('✅ Gán bài thi thành công!'),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1385,7 +1638,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: Text('❌ Lỗi: $e'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1393,7 +1648,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   }
 
   Future<void> _removeQuizFromClass(
-      String quizId, Map<String, dynamic> data) async {
+    String quizId,
+    Map<String, dynamic> data,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => Dialog(
@@ -1417,7 +1674,11 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                   color: Colors.red.shade100,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.warning_rounded, color: Colors.red.shade700, size: 48),
+                child: Icon(
+                  Icons.warning_rounded,
+                  color: Colors.red.shade700,
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -1438,10 +1699,18 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                       onPressed: () => Navigator.pop(context, false),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        side: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Hủy', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1452,9 +1721,14 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.red.shade600,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Gỡ bỏ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Gỡ bỏ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -1484,9 +1758,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
       await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
-          .update({
-        'quizCount': currentCount > 0 ? currentCount - 1 : 0,
-      });
+          .update({'quizCount': currentCount > 0 ? currentCount - 1 : 0});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1494,7 +1766,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: const Text('✅ Đã gỡ bài thi khỏi lớp'),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -1505,7 +1779,9 @@ class _ClassDetailPageState extends State<ClassDetailPage>
             content: Text('❌ Lỗi: $e'),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }

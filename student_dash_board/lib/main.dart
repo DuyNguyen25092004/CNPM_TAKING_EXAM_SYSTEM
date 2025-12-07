@@ -8,6 +8,7 @@ import 'screens/student/class_list_page.dart';
 import 'screens/teacher/teacher_panel.dart';
 import 'services/user_service.dart';
 import 'services/auth_sync_service.dart';
+import 'services/quiz_schedule_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,7 @@ void main() async {
   // 🔄 KHỞI ĐỘNG SERVICE ĐỒNG BỘ TỰ ĐỘNG
   // Từ giờ, mọi thay đổi trong Authentication sẽ tự động sync sang Firestore
   AuthSyncService.initialize();
-
+  QuizScheduleService.startScheduler();
   runApp(const MyApp());
 }
 
@@ -27,10 +28,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Student Quiz App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: const AuthWrapper(),
       debugShowCheckedModeBanner: false,
     );
@@ -92,7 +90,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return _buildErrorScreen(
             context,
             title: 'Email không hợp lệ',
-            message: 'Email không chứa mã sinh viên hợp lệ (cần 9 chữ số).\nVui lòng sử dụng email sinh viên.',
+            message:
+                'Email không chứa mã sinh viên hợp lệ (cần 9 chữ số).\nVui lòng sử dụng email sinh viên.',
             showRetry: false,
           );
         }
@@ -130,7 +129,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return _buildErrorScreen(
                 context,
                 title: 'Lỗi đồng bộ',
-                message: 'Không thể đồng bộ với máy chủ.\nVui lòng kiểm tra kết nối và thử lại.',
+                message:
+                    'Không thể đồng bộ với máy chủ.\nVui lòng kiểm tra kết nối và thử lại.',
                 onRetry: () => setState(() {}),
               );
             }
@@ -144,7 +144,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return _buildErrorScreen(
                 context,
                 title: 'Không tìm thấy vai trò',
-                message: 'Tài khoản chưa được gán vai trò.\nVui lòng liên hệ quản trị viên.',
+                message:
+                    'Tài khoản chưa được gán vai trò.\nVui lòng liên hệ quản trị viên.',
                 showRetry: false,
               );
             }
@@ -152,7 +153,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
             // Chuyển hướng dựa trên role
             print('✅ Redirecting to $role panel');
             print('   Using Student ID: $studentId');
-            print('   ✨ Auto-sync enabled - changes will be reflected automatically');
+            print(
+              '   ✨ Auto-sync enabled - changes will be reflected automatically',
+            );
 
             if (role == 'student') {
               return ClassListPage(studentId: studentId);
@@ -164,7 +167,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return _buildErrorScreen(
                 context,
                 title: 'Vai trò không hợp lệ',
-                message: 'Vai trò "$role" không được hỗ trợ.\nVui lòng liên hệ quản trị viên.',
+                message:
+                    'Vai trò "$role" không được hỗ trợ.\nVui lòng liên hệ quản trị viên.',
                 showRetry: false,
               );
             }
@@ -199,12 +203,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   /// Widget hiển thị màn hình lỗi
   Widget _buildErrorScreen(
-      BuildContext context, {
-        required String title,
-        required String message,
-        VoidCallback? onRetry,
-        bool showRetry = true,
-      }) {
+    BuildContext context, {
+    required String title,
+    required String message,
+    VoidCallback? onRetry,
+    bool showRetry = true,
+  }) {
     return Scaffold(
       body: Center(
         child: Padding(
@@ -212,11 +216,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 80,
-                color: Colors.orange[300],
-              ),
+              Icon(Icons.error_outline, size: 80, color: Colors.orange[300]),
               const SizedBox(height: 24),
               Text(
                 title,
@@ -229,10 +229,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
               const SizedBox(height: 12),
               Text(
                 message,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -303,7 +300,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Colors.blue.shade700,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Đồng bộ tự động đã bật',

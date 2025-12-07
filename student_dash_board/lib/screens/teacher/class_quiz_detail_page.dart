@@ -1,9 +1,12 @@
 // lib/screens/teacher/class_quiz_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../teacher/edit_quiz_page.dart';
+import 'edit_quiz_page.dart';
+import 'quiz_schedule_dialog.dart';
+import '../../services/quiz_schedule_service.dart';
+import '../../models/quiz_schedule_model.dart';
 
-class ClassQuizDetailPage extends StatelessWidget {
+class ClassQuizDetailPage extends StatefulWidget {
   final String classId;
   final String quizId;
   final Map<String, dynamic> quizData;
@@ -16,6 +19,40 @@ class ClassQuizDetailPage extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<ClassQuizDetailPage> createState() => _ClassQuizDetailPageState();
+}
+
+class _ClassQuizDetailPageState extends State<ClassQuizDetailPage> {
+  QuizSchedule? _currentSchedule;
+  bool _isLoadingSchedule = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchedule();
+  }
+
+  Future<void> _loadSchedule() async {
+    try {
+      final schedule = await QuizScheduleService.getSchedule(
+        widget.classId,
+        widget.quizId,
+      );
+      if (mounted) {
+        setState(() {
+          _currentSchedule = schedule;
+          _isLoadingSchedule = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading schedule: $e');
+      if (mounted) {
+        setState(() => _isLoadingSchedule = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
@@ -23,11 +60,7 @@ class ClassQuizDetailPage extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.green.shade50,
-              Colors.white,
-              Colors.teal.shade50,
-            ],
+            colors: [Colors.green.shade50, Colors.white, Colors.teal.shade50],
           ),
         ),
         child: SafeArea(
@@ -46,75 +79,106 @@ class ClassQuizDetailPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.green.shade400, Colors.green.shade600],
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.quiz_rounded,
-                        size: 28,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            quizData['title'] ?? 'Chi tiết bài thi',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                              letterSpacing: 0.5,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.green.shade400,
+                                Colors.green.shade600,
+                              ],
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${quizData['questionCount']} câu hỏi • ${quizData['duration']} phút',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
+                          child: const Icon(
+                            Icons.quiz_rounded,
+                            size: 28,
+                            color: Colors.white,
                           ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.edit_rounded,
-                          color: Colors.orange.shade700,
                         ),
-                        tooltip: 'Chỉnh sửa',
-                        onPressed: () => _editQuiz(context),
-                      ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.quizData['title'] ?? 'Chi tiết bài thi',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                  letterSpacing: 0.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${widget.quizData['questionCount']} câu hỏi • ${widget.quizData['duration']} phút',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Schedule Button
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.schedule_rounded,
+                              color: Colors.blue.shade700,
+                            ),
+                            tooltip: 'Lên lịch',
+                            onPressed: () => _manageSchedule(context),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Edit Button
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.edit_rounded,
+                              color: Colors.orange.shade700,
+                            ),
+                            tooltip: 'Chỉnh sửa',
+                            onPressed: () => _editQuiz(context),
+                          ),
+                        ),
+                      ],
                     ),
+
+                    // Schedule Status Banner
+                    if (!_isLoadingSchedule && _currentSchedule != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: _buildScheduleBanner(_currentSchedule!),
+                      ),
                   ],
                 ),
               ),
@@ -124,7 +188,7 @@ class ClassQuizDetailPage extends StatelessWidget {
                 child: FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
                       .collection('quiz')
-                      .doc(quizId)
+                      .doc(widget.quizId)
                       .collection('questions')
                       .get(),
                   builder: (context, snapshot) {
@@ -135,7 +199,8 @@ class ClassQuizDetailPage extends StatelessWidget {
                           children: [
                             CircularProgressIndicator(
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.green.shade600),
+                                Colors.green.shade600,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             const Text('Đang tải câu hỏi...'),
@@ -157,9 +222,10 @@ class ClassQuizDetailPage extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.error_outline,
-                                  size: 60,
-                                  color: Colors.red.shade700
+                              Icon(
+                                Icons.error_outline,
+                                size: 60,
+                                color: Colors.red.shade700,
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -267,7 +333,7 @@ class ClassQuizDetailPage extends StatelessWidget {
                                       child: _buildInfoItem(
                                         Icons.quiz,
                                         'Số câu hỏi',
-                                        '${quizData['questionCount']}',
+                                        '${widget.quizData['questionCount']}',
                                         Colors.blue,
                                       ),
                                     ),
@@ -276,7 +342,7 @@ class ClassQuizDetailPage extends StatelessWidget {
                                       child: _buildInfoItem(
                                         Icons.timer,
                                         'Thời gian',
-                                        '${quizData['duration']} phút',
+                                        '${widget.quizData['duration']} phút',
                                         Colors.orange,
                                       ),
                                     ),
@@ -319,9 +385,10 @@ class ClassQuizDetailPage extends StatelessWidget {
                           ...questions.asMap().entries.map((entry) {
                             final index = entry.key;
                             final questionData =
-                            entry.value.data() as Map<String, dynamic>;
-                            final options =
-                            List<String>.from(questionData['options'] ?? []);
+                                entry.value.data() as Map<String, dynamic>;
+                            final options = List<String>.from(
+                              questionData['options'] ?? [],
+                            );
                             final correctAnswer = questionData['correctAnswer'];
 
                             return Container(
@@ -346,15 +413,19 @@ class ClassQuizDetailPage extends StatelessWidget {
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 6),
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
                                           decoration: BoxDecoration(
                                             gradient: LinearGradient(
                                               colors: [
                                                 Colors.green.shade400,
-                                                Colors.green.shade600
+                                                Colors.green.shade600,
                                               ],
                                             ),
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Text(
                                             'Câu ${index + 1}',
@@ -378,12 +449,15 @@ class ClassQuizDetailPage extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 16),
                                     ...options.asMap().entries.map((optEntry) {
-                                      final letter =
-                                      String.fromCharCode(65 + optEntry.key);
+                                      final letter = String.fromCharCode(
+                                        65 + optEntry.key,
+                                      );
                                       final isCorrect = letter == correctAnswer;
 
                                       return Container(
-                                        margin: const EdgeInsets.only(bottom: 12),
+                                        margin: const EdgeInsets.only(
+                                          bottom: 12,
+                                        ),
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
                                           color: isCorrect
@@ -395,7 +469,9 @@ class ClassQuizDetailPage extends StatelessWidget {
                                                 : Colors.grey.shade300,
                                             width: isCorrect ? 2 : 1,
                                           ),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         child: Row(
                                           children: [
@@ -459,7 +535,127 @@ class ClassQuizDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String label, String value, Color color) {
+  Widget _buildScheduleBanner(QuizSchedule schedule) {
+    Color bannerColor;
+    IconData bannerIcon;
+    String bannerText;
+    List<String> details = [];
+
+    if (schedule.isClosed) {
+      bannerColor = Colors.red;
+      bannerIcon = Icons.lock;
+      bannerText = 'Đề thi đã đóng';
+      if (schedule.closeTime != null) {
+        details.add('Đóng lúc: ${_formatDateTime(schedule.closeTime!)}');
+      }
+    } else if (schedule.isOpen) {
+      bannerColor = Colors.green;
+      bannerIcon = Icons.lock_open;
+      bannerText = 'Đề thi đang mở';
+      if (schedule.closeTime != null) {
+        details.add('Đóng lúc: ${_formatDateTime(schedule.closeTime!)}');
+      }
+    } else {
+      bannerColor = Colors.orange;
+      bannerIcon = Icons.schedule;
+      bannerText = 'Đề thi đã lên lịch';
+      if (schedule.openTime != null) {
+        details.add('Mở lúc: ${_formatDateTime(schedule.openTime!)}');
+      }
+      if (schedule.closeTime != null) {
+        details.add('Đóng lúc: ${_formatDateTime(schedule.closeTime!)}');
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bannerColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: bannerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(bannerIcon, color: bannerColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                bannerText,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: bannerColor,
+                ),
+              ),
+              const Spacer(),
+              // Quick actions
+              if (schedule.isScheduled)
+                TextButton.icon(
+                  onPressed: () => _openQuizNow(schedule),
+                  icon: const Icon(Icons.play_arrow, size: 16),
+                  label: const Text('Mở ngay', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                  ),
+                ),
+              if (schedule.isOpen)
+                TextButton.icon(
+                  onPressed: () => _closeQuizNow(schedule),
+                  icon: const Icon(Icons.lock, size: 16),
+                  label: const Text(
+                    'Đóng ngay',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...details
+                .map(
+                  (detail) => Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.access_time, size: 14, color: bannerColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          detail,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: bannerColor.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -492,10 +688,7 @@ class ClassQuizDetailPage extends StatelessWidget {
                 ),
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -505,14 +698,133 @@ class ClassQuizDetailPage extends StatelessWidget {
     );
   }
 
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} '
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _manageSchedule(BuildContext context) async {
+    final result = await showDialog(
+      context: context,
+      builder: (context) => QuizScheduleDialog(
+        classId: widget.classId,
+        quizId: widget.quizId,
+        quizTitle: widget.quizData['title'] ?? 'Đề thi',
+        existingSchedule: _currentSchedule,
+      ),
+    );
+
+    if (result == true) {
+      // Reload schedule
+      await _loadSchedule();
+    }
+  }
+
+  Future<void> _openQuizNow(QuizSchedule schedule) async {
+    try {
+      await QuizScheduleService.openQuizNow(widget.classId, widget.quizId);
+      await _loadSchedule();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Đã mở đề thi'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _closeQuizNow(QuizSchedule schedule) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận đóng'),
+        content: const Text('Bạn có chắc muốn đóng đề thi này ngay?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await QuizScheduleService.closeQuizNow(widget.classId, widget.quizId);
+      await _loadSchedule();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Đã đóng đề thi'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _editQuiz(BuildContext context) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditQuizPage(
-          quizId: quizId,
-          quizData: quizData,
-        ),
+        builder: (context) =>
+            EditQuizPage(quizId: widget.quizId, quizData: widget.quizData),
       ),
     );
 
@@ -539,9 +851,9 @@ class ClassQuizDetailPage extends StatelessWidget {
         context,
         MaterialPageRoute(
           builder: (context) => ClassQuizDetailPage(
-            classId: classId,
-            quizId: quizId,
-            quizData: quizData,
+            classId: widget.classId,
+            quizId: widget.quizId,
+            quizData: widget.quizData,
           ),
         ),
       );
