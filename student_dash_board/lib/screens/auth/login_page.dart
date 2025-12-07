@@ -41,6 +41,12 @@ class _LoginPageState extends State<LoginPage> {
       microsoftProvider.addScope('email');
       microsoftProvider.addScope('profile');
 
+      // ⚡ QUAN TRỌNG: Thêm custom parameters để force account selection
+      microsoftProvider.setCustomParameters({
+        'prompt': 'select_account', // Buộc hiển thị màn hình chọn tài khoản
+        'login_hint': '', // Xóa hint về tài khoản trước đó
+      });
+
       UserCredential? userCredential;
 
       // Kiểm tra platform và sử dụng method phù hợp
@@ -143,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => role == 'student'
-              ? ClassListPage(studentId: studentId)  // Sử dụng studentId
+              ? ClassListPage(studentId: studentId)
               : const TeacherPanel(),
         ),
             (route) => false,
