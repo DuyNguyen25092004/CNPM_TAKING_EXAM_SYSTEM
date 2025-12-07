@@ -24,6 +24,8 @@ dependencies:
   # PDF handling
   pdf: ^3.10.7
   printing: ^5.12.0
+
+  excel: ^4.0.3  # excel
   
   # Document parsing
   syncfusion_flutter_pdf: ^31.2.15

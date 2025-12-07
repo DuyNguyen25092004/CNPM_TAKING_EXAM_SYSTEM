@@ -1,6 +1,10 @@
 // lib/screens/teacher/class_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+// import 'package:excel/excel.dart';
+import 'package:excel/excel.dart' hide Border;
+
 import 'class_create_quiz_page.dart';
 import 'class_quiz_detail_page.dart';
 import 'class_results_page.dart';
@@ -26,16 +30,15 @@ class _ClassDetailPageState extends State<ClassDetailPage>
   late TabController _tabController;
   final _studentEmailController = TextEditingController();
   final _studentNameController = TextEditingController();
+  bool _isImporting = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
-    // THÊM: Lắng nghe sự kiện chuyển tab để cập nhật nút FAB
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        setState(() {}); // Rebuild lại giao diện để đổi nút FAB
+        setState(() {});
       }
     });
   }
@@ -66,7 +69,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
 
   @override
   Widget build(BuildContext context) {
-    // Xác định màu và text cho FAB dựa trên tab hiện tại
     Color fabColor = Colors.blue.shade600;
     String fabLabel = 'Thêm học sinh';
     IconData fabIcon = Icons.person_add_rounded;
@@ -195,7 +197,6 @@ class _ClassDetailPageState extends State<ClassDetailPage>
                     fontSize: 15,
                   ),
                   onTap: (index) {
-                    // Gọi setState để cập nhật UI ngay khi tap vào tab
                     setState(() {});
                   },
                   tabs: const [
@@ -221,13 +222,12 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           ),
         ),
       ),
-      // Logic hiển thị FAB
       floatingActionButton: _tabController.index == 2
           ? null
           : FloatingActionButton.extended(
               onPressed: () {
                 if (_tabController.index == 0) {
-                  _showAddStudentDialog();
+                  _showAddStudentOptionsDialog();
                 } else if (_tabController.index == 1) {
                   _showQuizOptionsDialog();
                 }
@@ -621,6 +621,512 @@ class _ClassDetailPageState extends State<ClassDetailPage>
     return Icons.schedule;
   }
 
+  // NEW: Show dialog with options to add student manually or import from Excel
+  void _showAddStudentOptionsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade50, Colors.white],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade400, Colors.blue.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.person_add_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Thêm học sinh',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Manual add option
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddStudentDialog();
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.person_add,
+                          color: Colors.blue.shade700,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Thêm thủ công',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Nhập từng học sinh',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Import from Excel option
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  _importStudentsFromExcel();
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.upload_file,
+                          color: Colors.green.shade700,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Import từ Excel',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Upload file .xlsx hoặc .xls',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Hủy',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // NEW: Import students from Excel file
+  Future<void> _importStudentsFromExcel() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+
+      if (result == null) return;
+
+      setState(() => _isImporting = true);
+
+      final bytes = result.files.single.bytes;
+      if (bytes == null) {
+        throw Exception('Không thể đọc file');
+      }
+
+      // Parse Excel file
+      var excel = Excel.decodeBytes(bytes);
+
+      // Get first sheet
+      var sheet = excel.tables[excel.tables.keys.first];
+      if (sheet == null) {
+        throw Exception('File Excel trống');
+      }
+
+      int successCount = 0;
+      int errorCount = 0;
+      List<String> errors = [];
+
+      // Skip header row (row 0) and process data
+      for (var i = 1; i < sheet.rows.length; i++) {
+        var row = sheet.rows[i];
+
+        // Skip empty rows
+        if (row.isEmpty || row.every((cell) => cell?.value == null)) {
+          continue;
+        }
+
+        try {
+          // Columns: B=Số thẻ SV (1), C=Họ tên SV (2), E=Số điện thoại (4)
+          // D=Lớp sinh hoạt (3) - optional
+
+          final studentIdStr = row[1]?.value?.toString().trim() ?? '';
+          final name = row[2]?.value?.toString().trim() ?? '';
+          final phone = row[4]?.value?.toString().trim() ?? '';
+
+          if (studentIdStr.isEmpty || name.isEmpty) {
+            errorCount++;
+            errors.add('Dòng ${i + 1}: Thiếu mã SV hoặc tên');
+            continue;
+          }
+
+          // Extract 9 digits from student ID
+          final studentId = studentIdStr.replaceAll(RegExp(r'[^0-9]'), '');
+          if (studentId.length < 9) {
+            errorCount++;
+            errors.add('Dòng ${i + 1}: Mã SV không hợp lệ ($studentIdStr)');
+            continue;
+          }
+
+          final studentId9 = studentId.substring(0, 9);
+
+          // Create email from student ID
+          final email = '${studentId9}@sv1.dut.udn.vn';
+
+          // Check if student already exists
+          final existingStudent = await FirebaseFirestore.instance
+              .collection('classes')
+              .doc(widget.classId)
+              .collection('students')
+              .doc(studentId9)
+              .get();
+
+          if (existingStudent.exists) {
+            errorCount++;
+            errors.add('Dòng ${i + 1}: Học sinh $studentId9 đã tồn tại');
+            continue;
+          }
+
+          // Add student to Firestore
+          await FirebaseFirestore.instance
+              .collection('classes')
+              .doc(widget.classId)
+              .collection('students')
+              .doc(studentId9)
+              .set({
+                'studentId': studentId9,
+                'email': email,
+                'name': name,
+                'phone': phone,
+                'addedAt': FieldValue.serverTimestamp(),
+              });
+
+          successCount++;
+        } catch (e) {
+          errorCount++;
+          errors.add('Dòng ${i + 1}: Lỗi - $e');
+        }
+      }
+
+      // Update student count
+      if (successCount > 0) {
+        final classDoc = await FirebaseFirestore.instance
+            .collection('classes')
+            .doc(widget.classId)
+            .get();
+        final currentCount = (classDoc.data()?['studentCount'] ?? 0) as int;
+
+        await FirebaseFirestore.instance
+            .collection('classes')
+            .doc(widget.classId)
+            .update({'studentCount': currentCount + successCount});
+      }
+
+      if (mounted) {
+        // Show result dialog
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.blue.shade50, Colors.white],
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: successCount > 0
+                          ? Colors.green.shade100
+                          : Colors.orange.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      successCount > 0 ? Icons.check_circle : Icons.warning,
+                      color: successCount > 0
+                          ? Colors.green.shade700
+                          : Colors.orange.shade700,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Kết quả import',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Thành công:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '$successCount',
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Lỗi:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '$errorCount',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (errors.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: SingleChildScrollView(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Chi tiết lỗi:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red.shade900,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...errors
+                                  .take(10)
+                                  .map(
+                                    (error) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 4),
+                                      child: Text(
+                                        '• $error',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.red.shade800,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              if (errors.length > 10)
+                                Text(
+                                  '... và ${errors.length - 10} lỗi khác',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.red.shade700,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Đóng',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi: $e'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isImporting = false);
+      }
+    }
+  }
+
   void _showQuizOptionsDialog() {
     showDialog(
       context: context,
@@ -951,6 +1457,8 @@ class _ClassDetailPageState extends State<ClassDetailPage>
     );
   }
 
+  // Continue with remaining methods (_showEditStudentDialog, _showAssignQuizDialog, _addStudent, etc.)
+  // These remain the same as in your original code...
   void _showEditStudentDialog(String studentDocId, Map<String, dynamic> data) {
     _studentEmailController.text = data['email'] ?? '';
     _studentNameController.text = data['name'] ?? '';
