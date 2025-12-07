@@ -358,7 +358,9 @@ class QuizListPage extends StatelessWidget {
       } else if (timeUntil.inHours > 0) {
         timeText = 'Mở sau ${timeUntil.inHours} giờ';
       } else {
-        timeText = 'Mở sau ${timeUntil.inMinutes} phút';
+        // ✅ LÀM TRÒN LÊN: 4 phút 1 giây → hiển thị 5 phút
+        final minutes = (timeUntil.inSeconds / 60).ceil();
+        timeText = 'Mở sau $minutes phút';
       }
 
       return {'text': timeText, 'color': Colors.orange, 'icon': Icons.schedule};
@@ -375,7 +377,9 @@ class QuizListPage extends StatelessWidget {
         } else if (timeLeft.inHours > 0) {
           timeText = 'Còn ${timeLeft.inHours} giờ';
         } else {
-          timeText = 'Còn ${timeLeft.inMinutes} phút';
+          // ✅ LÀM TRÒN LÊN: 4 phút 1 giây → hiển thị 5 phút
+          final minutes = (timeLeft.inSeconds / 60).ceil();
+          timeText = 'Còn $minutes phút';
         }
 
         return {
