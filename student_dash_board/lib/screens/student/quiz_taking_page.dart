@@ -44,7 +44,7 @@ class _QuizTakingPageState extends State<QuizTakingPage>
   // CHEATING DETECTION VARIABLES
   // ============================================
   int _suspiciousActionCount = 0;
-  static const int _maxSuspiciousActions = 5;
+  int _maxSuspiciousActions = 5; // Will be loaded from quiz data
   bool _hasShownWarning = false;
   DateTime? _lastFocusLossTime;
   bool _isInitialFullscreenEntry = true;
@@ -885,6 +885,19 @@ class _QuizTakingPageState extends State<QuizTakingPage>
 
   Future<void> _loadQuestions() async {
     try {
+      // ADDED: Load quiz document first to get maxSuspiciousActions
+      final quizDoc = await FirebaseFirestore.instance
+          .collection('quiz')
+          .doc(widget.quizId)
+          .get();
+
+      if (quizDoc.exists) {
+        final quizData = quizDoc.data() as Map<String, dynamic>;
+        _maxSuspiciousActions = quizData['maxSuspiciousActions'] ?? 5;
+        print('📋 Loaded maxSuspiciousActions: $_maxSuspiciousActions');
+      }
+
+      // Load questions
       final snapshot = await FirebaseFirestore.instance
           .collection('quiz')
           .doc(widget.quizId)

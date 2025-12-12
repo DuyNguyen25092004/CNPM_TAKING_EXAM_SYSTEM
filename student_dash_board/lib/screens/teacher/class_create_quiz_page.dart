@@ -1,16 +1,15 @@
 // lib/screens/teacher/class_create_quiz_page.dart
-import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
 class ClassCreateQuizPage extends StatefulWidget {
   final String classId;
 
-  const ClassCreateQuizPage({
-    Key? key,
-    required this.classId,
-  }) : super(key: key);
+  const ClassCreateQuizPage({Key? key, required this.classId})
+    : super(key: key);
 
   @override
   State<ClassCreateQuizPage> createState() => _ClassCreateQuizPageState();
@@ -20,6 +19,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _durationController = TextEditingController(text: '30');
+  final _maxViolationsController = TextEditingController(text: '5'); // ADDED
   bool _isUploading = false;
   double _uploadProgress = 0.0;
 
@@ -27,6 +27,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
   void dispose() {
     _titleController.dispose();
     _durationController.dispose();
+    _maxViolationsController.dispose(); // ADDED
     super.dispose();
   }
 
@@ -38,11 +39,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade50,
-              Colors.white,
-              Colors.cyan.shade50,
-            ],
+            colors: [Colors.blue.shade50, Colors.white, Colors.cyan.shade50],
           ),
         ),
         child: SafeArea(
@@ -106,10 +103,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                           SizedBox(height: 4),
                           Text(
                             'Tạo và gán trực tiếp vào lớp',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -176,22 +170,24 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade50,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey.shade200),
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                  ),
                                 ),
                                 child: const Text(
                                   'File PDF hoặc TXT phải có định dạng:\n\n'
-                                      'Câu 1: Thủ đô Việt Nam là?\n'
-                                      'A. Hà Nội\n'
-                                      'B. Đà Nẵng\n'
-                                      'C. TP.HCM\n'
-                                      'D. Hải Phòng\n'
-                                      'Đáp án: A\n\n'
-                                      'Câu 2: 2 + 2 = ?\n'
-                                      'A. 2\n'
-                                      'B. 3\n'
-                                      'C. 4\n'
-                                      'D. 5\n'
-                                      'Đáp án: C',
+                                  'Câu 1: Thủ đô Việt Nam là?\n'
+                                  'A. Hà Nội\n'
+                                  'B. Đà Nẵng\n'
+                                  'C. TP.HCM\n'
+                                  'D. Hải Phòng\n'
+                                  'Đáp án: A\n\n'
+                                  'Câu 2: 2 + 2 = ?\n'
+                                  'A. 2\n'
+                                  'B. 3\n'
+                                  'C. 4\n'
+                                  'D. 5\n'
+                                  'Đáp án: C',
                                   style: TextStyle(
                                     fontSize: 14,
                                     height: 1.5,
@@ -296,6 +292,42 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                   return null;
                                 },
                               ),
+
+                              const SizedBox(height: 16),
+
+                              // ADDED: Max Violations
+                              TextFormField(
+                                controller: _maxViolationsController,
+                                decoration: InputDecoration(
+                                  labelText: 'Số lần vi phạm tối đa',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.warning_amber_rounded,
+                                  ),
+                                  hintText: '5',
+                                  helperText:
+                                      'Học sinh sẽ tự động nộp bài sau khi vi phạm đủ số lần',
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Vui lòng nhập số lần vi phạm';
+                                  }
+                                  final maxViolations = int.tryParse(value);
+                                  if (maxViolations == null ||
+                                      maxViolations < 1) {
+                                    return 'Số lần vi phạm phải ≥ 1';
+                                  }
+                                  if (maxViolations > 20) {
+                                    return 'Số lần vi phạm không nên > 20';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -311,7 +343,10 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                             icon: const Icon(Icons.upload_file, size: 28),
                             label: const Text(
                               'Upload File PDF/TXT',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue.shade600,
@@ -347,15 +382,18 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                       width: 24,
                                       height: 24,
                                       child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                            Colors.blue.shade600),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.blue.shade600,
+                                            ),
                                         strokeWidth: 3,
                                       ),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           const Text(
                                             'Đang xử lý file...',
@@ -385,7 +423,8 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                     minHeight: 8,
                                     backgroundColor: Colors.blue.shade100,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.blue.shade600),
+                                      Colors.blue.shade600,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -405,7 +444,8 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.lightbulb_rounded,
+                              Icon(
+                                Icons.lightbulb_rounded,
                                 color: Colors.orange.shade700,
                                 size: 28,
                               ),
@@ -413,10 +453,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                               const Expanded(
                                 child: Text(
                                   'Đề thi sẽ được tạo và tự động gán vào lớp này.',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    height: 1.5,
-                                  ),
+                                  style: TextStyle(fontSize: 15, height: 1.5),
                                 ),
                               ),
                             ],
@@ -476,17 +513,20 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
       if (questions.isEmpty) {
         throw Exception(
           'Không tìm thấy câu hỏi nào!\n\n'
-              'Vui lòng kiểm tra định dạng file.',
+          'Vui lòng kiểm tra định dạng file.',
         );
       }
 
       setState(() => _uploadProgress = 0.7);
 
-      // Create quiz in global collection
+      // MODIFIED: Create quiz in global collection with maxSuspiciousActions
       final quizRef = await FirebaseFirestore.instance.collection('quiz').add({
         'title': _titleController.text.trim(),
         'questionCount': questions.length,
         'duration': int.parse(_durationController.text),
+        'maxSuspiciousActions': int.parse(
+          _maxViolationsController.text,
+        ), // ADDED
         'status': 'available',
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -503,11 +543,11 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
           .collection('quizzes')
           .doc(quizRef.id)
           .set({
-        'title': _titleController.text.trim(),
-        'questionCount': questions.length,
-        'duration': int.parse(_durationController.text),
-        'assignedAt': FieldValue.serverTimestamp(),
-      });
+            'title': _titleController.text.trim(),
+            'questionCount': questions.length,
+            'duration': int.parse(_durationController.text),
+            'assignedAt': FieldValue.serverTimestamp(),
+          });
 
       // Update quiz count
       final classDoc = await FirebaseFirestore.instance
@@ -519,9 +559,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
       await FirebaseFirestore.instance
           .collection('classes')
           .doc(widget.classId)
-          .update({
-        'quizCount': currentCount + 1,
-      });
+          .update({'quizCount': currentCount + 1});
 
       setState(() => _uploadProgress = 1.0);
 
@@ -594,25 +632,61 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
   List<Map<String, dynamic>> _parseQuestions(String content) {
     List<Map<String, dynamic>> questions = [];
 
-    final questionPattern = RegExp(
-      r'Câu\s+(\d+):\s*(.+?)\s*A\.\s*(.+?)\s*B\.\s*(.+?)\s*C\.\s*(.+?)\s*D\.\s*(.+?)\s*Đáp án:\s*([A-D])',
-      multiLine: true,
-      dotAll: true,
-    );
+    // Step 1: Replace newlines with placeholder to preserve intentional spaces
+    content = content.replaceAll('\r\n', '@@NEWLINE@@');
+    content = content.replaceAll('\r', '@@NEWLINE@@');
+    content = content.replaceAll('\n', '@@NEWLINE@@');
 
-    final matches = questionPattern.allMatches(content);
+    // Step 2: Remove newlines that break Vietnamese characters
+    // Remove newlines NOT preceded by space or letter (breaking chars)
+    content = content.replaceAll(RegExp(r'(?<![a-zA-Z\s])@@NEWLINE@@'), '');
+    // Remove newlines NOT followed by space or letter (breaking chars)
+    content = content.replaceAll(RegExp(r'@@NEWLINE@@(?![a-zA-Z\s])'), '');
+    // Convert remaining newlines back to spaces
+    content = content.replaceAll('@@NEWLINE@@', ' ');
 
-    for (var match in matches) {
-      questions.add({
-        'question': match.group(2)!.trim(),
-        'options': [
-          match.group(3)!.trim(),
-          match.group(4)!.trim(),
-          match.group(5)!.trim(),
-          match.group(6)!.trim(),
-        ],
-        'correctAnswer': match.group(7)!.trim(),
-      });
+    // Step 3: Normalize to NFC to combine Vietnamese characters properly
+    content = unorm.nfc(content);
+
+    // Step 4: Remove zero-width spaces
+    content = content.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+
+    // Step 5: Add spaces around markers for proper parsing
+    content = content.replaceAll('Câu', ' Câu ');
+    content = content.replaceAll('A.', ' A. ');
+    content = content.replaceAll('B.', ' B. ');
+    content = content.replaceAll('C.', ' C. ');
+    content = content.replaceAll('D.', ' D. ');
+    content = content.replaceAll('Đápán:', ' Đáp án: ');
+    content = content.replaceAll('?', '? ');
+
+    // Step 6: Clean up multiple spaces
+    content = content.replaceAll(RegExp(r'\s+'), ' ');
+    content = content.trim();
+
+    // Step 7: Split by "Câu X:" pattern to get individual question blocks
+    final parts = content.split(RegExp(r'Câu\s+\d+:'));
+
+    // Step 8: Parse each block (skip first empty element)
+    for (int i = 1; i < parts.length; i++) {
+      final block = parts[i].trim();
+
+      final match = RegExp(
+        r'^\s*(.+?)\s+A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+Đáp\s*án:\s*([A-D])',
+      ).firstMatch(block);
+
+      if (match != null) {
+        questions.add({
+          'question': match.group(1)!.trim(),
+          'options': [
+            match.group(2)!.trim(),
+            match.group(3)!.trim(),
+            match.group(4)!.trim(),
+            match.group(5)!.trim(),
+          ],
+          'correctAnswer': match.group(6)!.trim(),
+        });
+      }
     }
 
     return questions;
