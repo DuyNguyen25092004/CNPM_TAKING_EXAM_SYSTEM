@@ -484,10 +484,6 @@ flutterfire configure
 - Chỉ hoạt động trên Web với HTTPS
 - Desktop/Mobile không cần fullscreen API
 
-## 📄 License
-
-MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
-
 ## 👥 Đóng góp
 
 Mọi đóng góp đều được chào đón! Vui lòng:
