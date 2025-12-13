@@ -1,349 +1,390 @@
-# Student Quiz App
+# Student Quiz App - README
 
-Ứng dụng thi trắc nghiệm trực tuyến dành cho học sinh, được xây dựng bằng Flutter và Firebase với hệ thống chống gian lận toàn diện và phân tích học tập chi tiết.
+## 📚 Giới thiệu
 
-## ⭐ Tính năng nổi bật
+**Student Quiz App** là ứng dụng thi trực tuyến được xây dựng bằng Flutter và Firebase, hỗ trợ giáo viên tạo và quản lý bài thi, đồng thời cho phép học sinh tham gia làm bài thi với hệ thống chống gian lận tích hợp.
 
-### 🎓 Dành cho Học sinh
+## ✨ Tính năng chính
+
+### 👨‍🏫 Dành cho Giáo viên
+
+#### Quản lý Lớp học
+- ✅ Tạo và quản lý nhiều lớp học
+- ✅ Thêm học sinh thủ công hoặc import từ file Excel
+- ✅ Xem danh sách học sinh và chỉnh sửa thông tin
+- ✅ Theo dõi số lượng bài thi và học sinh
+
+#### Quản lý Đề thi
+- ✅ **Kho đề thi trung tâm**: Tạo và lưu trữ đề thi để tái sử dụng
+- ✅ **Upload từ file**: Hỗ trợ PDF và TXT với format chuẩn
+- ✅ **Tạo trực tiếp**: Tạo đề thi mới và gán vào lớp ngay lập tức
+- ✅ **Chỉnh sửa**: Cập nhật câu hỏi, đáp án, thời gian làm bài
+- ✅ **Cấu hình vi phạm**: Đặt số lần vi phạm tối đa (1-20 lần)
+
+#### Lên lịch Bài thi
+- ✅ **Đặt thời gian mở/đóng**: Lên lịch tự động mở và đóng bài thi
+- ✅ **Mở/đóng thủ công**: Kiểm soát trạng thái bài thi theo thời gian thực
+- ✅ **Hiển thị trạng thái**: Đã lên lịch, đang mở, đã đóng
+- ✅ **Đếm ngược thời gian**: Hiển thị thời gian còn lại cho học sinh
+
+#### Xem kết quả
+- ✅ **Bảng kết quả chi tiết**: Xem điểm, thời gian, vi phạm của từng học sinh
+- ✅ **Tìm kiếm và lọc**: Tìm theo mã học sinh, lọc theo bài thi
+- ✅ **Sắp xếp linh hoạt**: Theo thời gian, điểm số, số lần vi phạm (tăng/giảm)
+- ✅ **Xem bài làm**: Chi tiết từng câu trả lời, đúng/sai
+- ✅ **Cảnh báo vi phạm**: Đánh dấu bài thi có hành vi khả nghi
+
+### 👨‍🎓 Dành cho Học sinh
+
+#### Tham gia Lớp học
+- ✅ Đăng nhập bằng Microsoft Account (Email sinh viên)
+- ✅ Tự động nhận diện mã sinh viên từ email
+- ✅ Xem danh sách lớp học đã tham gia
+- ✅ Giao diện thân thiện, dễ sử dụng
 
 #### Làm bài thi
-- **Dashboard**: Xem tổng quan số lượng bài thi khả dụng và lịch sử làm bài gần đây
-- **Danh sách bài thi**: Hiển thị các bài thi chưa hoàn thành với đầy đủ thông tin (số câu hỏi, thời gian)
-- **Thi trực tuyến**: Giao diện làm bài với timer đếm ngược, thanh tiến trình và hiển thị số câu đã làm
-- **Nộp bài tự động**: Tự động nộp bài khi hết giờ hoặc khi hoàn thành tất cả câu hỏi
+- ✅ **Xem bài thi khả dụng**: Danh sách bài thi chưa làm
+- ✅ **Kiểm tra lịch trình**: Hiển thị trạng thái mở/đóng, thời gian còn lại
+- ✅ **Làm bài fullscreen**: Bắt buộc chế độ toàn màn hình
+- ✅ **Đếm ngược thời gian**: Timer hiển thị thời gian còn lại
+- ✅ **Điều hướng câu hỏi**: Palette để nhảy đến câu bất kỳ
+- ✅ **Theo dõi tiến độ**: Số câu đã làm/tổng số câu
 
-#### Lịch sử và Kết quả
-- **Lịch sử thi**: Xem lại điểm số và thời gian hoàn thành các bài thi đã làm
-- **Chi tiết kết quả**: Xem đáp án đã chọn, đáp án đúng và thời gian làm bài
+#### Hệ thống Chống gian lận
+- ⚠️ **Phát hiện chuyển tab/cửa sổ**: Cảnh báo khi rời khỏi trang thi
+- ⚠️ **Phát hiện thoát fullscreen**: Cảnh báo và yêu cầu vào lại
+- ⚠️ **Phát hiện thay đổi kích thước**: Cảnh báo khi resize window
+- ⚠️ **Đếm số vi phạm**: Hiển thị số lần vi phạm/giới hạn
+- ⚠️ **Cảnh báo cuối cùng**: Dialog đặc biệt trước vi phạm cuối
+- ⚠️ **Tự động nộp bài**: Nộp bài ngay khi vượt quá số vi phạm cho phép
+- ⚠️ **Ghi nhận vi phạm**: Lưu vào Firestore để giáo viên xem lại
 
-#### 📊 Phân tích Học tập (Analytics)
-- **Tổng quan hiệu suất**:
-  - Tổng số bài thi đã hoàn thành
-  - Điểm trung bình và tỷ lệ đúng trung bình
-  - Thời gian trung bình mỗi bài thi
+#### Xem lịch sử
+- ✅ Danh sách bài thi đã làm
+- ✅ Xem lại điểm số và chi tiết bài làm
+- ✅ So sánh đáp án đúng/sai
 
-- **Phân loại kết quả**:
-  - Xuất sắc (≥80%): Hiển thị số lượng và phần trăm
-  - Khá (65-79%): Theo dõi bài thi đạt mức khá
-  - Trung bình (50-64%): Xác định vùng cần cải thiện
-  - Yếu (<50%): Cảnh báo các bài thi cần ôn tập lại
+## 🛠️ Công nghệ sử dụng
 
-- **Phân tích xu hướng**:
-  - Chỉ số tiến bộ: So sánh nửa đầu và nửa sau kết quả
-  - Biểu đồ xu hướng 10 bài gần nhất
-  - Hiển thị xu hướng tăng/giảm điểm số
+### Frontend
+- **Flutter 3.x**: Framework đa nền tảng (Web, Mobile, Desktop)
+- **Material Design 3**: Giao diện hiện đại, responsive
 
-- **Phân tích thời gian**:
-  - Tổng thời gian học tập
-  - Thời gian trung bình mỗi bài
-  - Bài thi nhanh nhất và chậm nhất
-  - Phân tích tốc độ làm bài
+### Backend & Database
+- **Firebase Authentication**: Đăng nhập Microsoft OAuth
+- **Cloud Firestore**: Database NoSQL thời gian thực
+- **Firebase Storage**: Lưu trữ file (nếu cần)
 
-### 🔒 Hệ thống Chống Gian lận (Anti-Cheat)
+### Thư viện bổ sung
+- `firebase_auth`: Xác thực người dùng
+- `cloud_firestore`: Tương tác Firestore
+- `file_picker`: Chọn file PDF/TXT/Excel
+- `syncfusion_flutter_pdf`: Đọc file PDF
+- `unorm_dart`: Chuẩn hóa Unicode tiếng Việt
+- `excel`: Đọc file Excel (.xlsx, .xls)
 
-#### Cross-Platform Anti-Cheat
-Hệ thống chống gian lận hoạt động trên tất cả nền tảng (Web, Android, iOS) với các tính năng:
-
-- **Phát hiện chuyển ứng dụng**: 
-  - Theo dõi khi học sinh chuyển sang app khác (Mobile)
-  - Phát hiện chuyển tab/cửa sổ (Web)
-  - Ghi nhận thời gian vắng mặt
-
-- **Chặn phím tắt nguy hiểm**:
-  - Chặn chụp màn hình (Print Screen, Snipping Tool)
-  - Vô hiệu hóa DevTools (F12, Ctrl+Shift+I)
-  - Chặn Copy/Paste/Cut
-  - Chặn View Source và Save Page
-
-- **Phân tích hành vi**:
-  - Theo dõi tốc độ trả lời câu hỏi
-  - Phát hiện pattern nghi ngờ (trả lời quá nhanh/chậm)
-  - Phân tích thời gian trên mỗi câu hỏi
-  - Theo dõi chuyển động chuột
-
-- **Hệ thống cảnh báo**:
-  - Hiển thị số lần vi phạm trên AppBar
-  - Mã màu theo mức độ nghiêm trọng (Vàng → Cam → Đỏ)
-  - Tự động nộp bài sau 3 cảnh báo
-  - Ghi log tất cả hoạt động nghi ngờ
-
-#### 📹 Camera Proctoring (Chỉ trên Web)
-- **Giám sát qua camera**:
-  - Yêu cầu bật camera trước khi bắt đầu thi
-  - Hiển thị preview camera bên cạnh bài thi
-  - Ghi hình liên tục trong suốt bài thi
-  - Chỉ báo REC màu đỏ khi đang quay
-
-- **Nhận diện khuôn mặt (Face Detection)**:
-  - Sử dụng TensorFlow.js và MediaPipe Face Detection
-  - Phát hiện khi không có khuôn mặt trong khung hình
-  - Cảnh báo khi phát hiện nhiều khuôn mặt
-  - Tự động restart camera nếu bị ngắt kết nối
-  - Hiển thị trạng thái face detection realtime
-
-- **Xử lý vi phạm camera**:
-  - Đếm số lần không phát hiện khuôn mặt
-  - Đếm số lần phát hiện nhiều người
-  - Tích hợp vào hệ thống cảnh báo chung
-  - Ghi log chi tiết vào Firestore
-
-#### 📱 Platform-Specific Features
-
-**Web**:
-- Tab visibility detection
-- Keyboard shortcut blocking
-- Clipboard blocking
-- Right-click prevention
-- Camera proctoring with face detection
-- Screenshot prevention
-
-**Mobile (Android/iOS)**:
-- App lifecycle monitoring
-- Fullscreen mode
-- Hardware keyboard blocking (Android)
-- Screenshot detection (Android)
-
-**Desktop**:
-- Keyboard monitoring
-- Mouse behavior tracking
-
-#### 🛡️ Báo cáo An toàn
-Mỗi bài thi đều có báo cáo chống gian lận chi tiết:
-- Tổng số cảnh báo
-- Số lần chuyển ứng dụng/tab
-- Số lần cố gắng chụp màn hình
-- Số lần không có khuôn mặt (Web)
-- Số lần nhiều khuôn mặt (Web)
-- Phân tích timing patterns
-- Cờ "flagged" cho bài thi nghi ngờ
-
-## 📁 Cấu trúc thư mục
+## 📁 Cấu trúc dự án
 
 ```
-lib/
-├── main.dart                               # Entry point
-├── models/                                 # Data models
-│   ├── quiz_model.dart                    # Model Quiz và Question
-│   └── submission_model.dart              # Model Submission
-├── services/                               # Business logic
-│   ├── firebase_service.dart              # Firebase operations
-│   ├── analytics_service.dart             # Tính toán analytics
-│   ├── anti_cheat_service.dart            # Anti-cheat cơ bản (Mobile)
-│   ├── web_anti_cheat_service.dart        # Anti-cheat cho Web
-│   ├── web_anti_cheat_service_stub.dart   # Stub cho non-web
-│   ├── cross_platform_anti_cheat_service.dart  # Anti-cheat đa nền tảng
-│   └── camera_proctoring_service.dart     # Camera và face detection (Web)
-├── screens/                                # UI screens
-│   ├── student/
-│   │   ├── student_panel.dart             # Navigation chính (5 tabs)
-│   │   ├── dashboard_page.dart            # Trang tổng quan
-│   │   ├── quiz_list_page.dart            # Danh sách bài thi
-│   │   ├── quiz_taking_page.dart          # Làm bài với anti-cheat
-│   │   ├── submit_quiz_page.dart          # Nộp bài
-│   │   ├── history_page.dart              # Lịch sử thi
-│   │   ├── result_detail_page.dart        # Chi tiết kết quả
-│   │   └── analytics_page.dart            # Phân tích học tập
-│   └── auth/
-│       └── login_page.dart                # Đăng nhập
-├── widgets/
-│   └── camera_permission_dialog.dart      # Dialog xin quyền camera
-└── utils/                                  # Helpers
-    ├── constants.dart                     # Constants
-    ├── helpers.dart                       # Hàm tiện ích
-    └── platform_utils.dart                # Platform detection
+student_quiz_app/
+│
+├── lib/
+│   ├── main.dart                          # Entry point của ứng dụng
+│   │
+│   ├── models/                            # Data models
+│   │   ├── quiz_model.dart                # Quiz & Question models
+│   │   ├── quiz_schedule_model.dart       # QuizSchedule model
+│   │   └── submission_model.dart          # Submission model
+│   │
+│   ├── screens/                           # UI Screens
+│   │   ├── auth/
+│   │   │   └── login_page.dart            # Trang đăng nhập Microsoft
+│   │   │
+│   │   ├── student/                       # Student screens
+│   │   │   ├── class_list_page.dart       # Danh sách lớp học
+│   │   │   ├── student_panel.dart         # Bottom nav (Dashboard/Quiz/History)
+│   │   │   ├── dashboard_page.dart        # Trang chủ học sinh
+│   │   │   ├── quiz_list_page.dart        # Danh sách bài thi khả dụng
+│   │   │   ├── quiz_taking_page.dart      # Trang làm bài thi (Anti-cheat)
+│   │   │   ├── history_page.dart          # Lịch sử bài thi đã làm
+│   │   │   └── result_detail_page.dart    # Chi tiết kết quả bài thi
+│   │   │
+│   │   └── teacher/                       # Teacher screens
+│   │       ├── teacher_panel.dart         # Bottom nav (Classes/QuizBank)
+│   │       ├── manage_classes_page.dart   # Quản lý lớp học
+│   │       ├── class_detail_page.dart     # Chi tiết lớp (Students/Quizzes/Results)
+│   │       ├── class_create_quiz_page.dart # Tạo đề thi gán trực tiếp vào lớp
+│   │       ├── class_quiz_detail_page.dart # Chi tiết đề thi trong lớp
+│   │       ├── class_results_page.dart    # Trang kết quả (search/filter/sort)
+│   │       ├── quiz_bank_page.dart        # Kho đề thi
+│   │       ├── quiz_bank_create_page.dart # Tạo đề thi vào kho
+│   │       ├── edit_quiz_page.dart        # Chỉnh sửa đề thi
+│   │       └── quiz_schedule_dialog.dart  # Dialog lên lịch bài thi
+│   │
+│   ├── services/                          # Business logic & Firebase services
+│   │   ├── firebase_service.dart          # CRUD Firestore operations
+│   │   ├── user_service.dart              # User authentication & profile
+│   │   └── quiz_schedule_service.dart     # Quiz scheduling logic
+│   │
+│   ├── utils/                             # Utilities & helpers
+│   │   ├── constants.dart                 # App constants (colors, strings)
+│   │   └── helpers.dart                   # Helper functions (format date, etc.)
+│   │
+│   └── widgets/                           # Reusable widgets (nếu có)
+│
+├── web/                                   # Web-specific files
+│   ├── index.html
+│   └── favicon.png
+│
+├── android/                               # Android-specific files
+├── ios/                                   # iOS-specific files
+├── windows/                               # Windows-specific files
+├── macos/                                 # macOS-specific files
+├── linux/                                 # Linux-specific files
+│
+├── assets/                                # Static assets
+│   ├── images/
+│   └── fonts/
+│
+├── test/                                  # Unit & widget tests
+│
+├── .gitignore
+├── pubspec.yaml                           # Dependencies
+├── README.md                              # Tài liệu này
+└── firebase.json                          # Firebase configuration
 ```
 
-## 🔧 Yêu cầu hệ thống
+## 📁 Cấu trúc Database (Firestore)
 
-- Flutter SDK: >= 3.0.0
-- Dart SDK: >= 3.0.0
-- Firebase Project với Firestore enabled
+```
+📦 Firestore Collections
 
-### Cho Web (Camera Proctoring)
-- Chrome/Edge/Firefox phiên bản mới nhất
-- Camera và microphone (chỉ cần camera)
-- HTTPS (required for getUserMedia API)
+├── 📂 users
+│   └── {userId}
+│       ├── email: string
+│       ├── role: "student" | "teacher"
+│       ├── displayName: string
+│       └── createdAt: timestamp
 
-## 📦 Dependencies
+├── 📂 classes
+│   └── {classId}
+│       ├── name: string
+│       ├── description: string
+│       ├── teacherId: string
+│       ├── studentCount: number
+│       ├── quizCount: number
+│       ├── createdAt: timestamp
+│       │
+│       ├── 📂 students (subcollection)
+│       │   └── {studentId (9 digits)}
+│       │       ├── studentId: string
+│       │       ├── email: string
+│       │       ├── name: string
+│       │       ├── phone: string (optional)
+│       │       └── addedAt: timestamp
+│       │
+│       ├── 📂 quizzes (subcollection)
+│       │   └── {quizId}
+│       │       ├── title: string
+│       │       ├── questionCount: number
+│       │       ├── duration: number (minutes)
+│       │       └── assignedAt: timestamp
+│       │
+│       └── 📂 schedules (subcollection)
+│           └── {scheduleId}
+│               ├── quizId: string
+│               ├── openTime: timestamp (nullable)
+│               ├── closeTime: timestamp (nullable)
+│               ├── autoOpen: boolean
+│               ├── autoClose: boolean
+│               ├── status: "scheduled" | "open" | "closed"
+│               ├── createdAt: timestamp
+│               └── updatedAt: timestamp
 
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  firebase_core: latest
-  cloud_firestore: latest
+├── 📂 quiz (global collection)
+│   └── {quizId}
+│       ├── title: string
+│       ├── questionCount: number
+│       ├── duration: number (minutes)
+│       ├── maxSuspiciousActions: number (1-20)
+│       ├── status: "available" | "archived"
+│       ├── createdAt: timestamp
+│       │
+│       └── 📂 questions (subcollection)
+│           └── {questionId}
+│               ├── question: string
+│               ├── options: array[4] of string
+│               ├── correctAnswer: "A" | "B" | "C" | "D"
+│               └── order: number (optional)
 
-# Web-specific (đã tích hợp trong Flutter)
-# - dart:html (cho camera và DOM manipulation)
-# - dart:js (cho TensorFlow.js integration)
+└── 📂 submissions
+    └── {submissionId}
+        ├── studentId: string
+        ├── quizId: string
+        ├── classId: string
+        ├── quizTitle: string
+        ├── answers: map<questionId, answer>
+        ├── score: number
+        ├── totalQuestions: number
+        ├── timestamp: timestamp
+        ├── timeSpent: number (seconds)
+        ├── suspiciousActionCount: number
+        ├── cheatingDetected: boolean
+        └── autoSubmitted: boolean
 ```
 
-### JavaScript Libraries (Web)
-Thêm vào `web/index.html`:
-```html
-<!-- TensorFlow.js -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+## 📝 Format file đề thi
 
-<!-- Face Detection Model -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-detection"></script>
+### Định dạng TXT/PDF
+
 ```
+Câu 1: Thủ đô của Việt Nam là?
+A. Hà Nội
+B. Đà Nẵng
+C. TP.HCM
+D. Hải Phòng
+Đáp án: A
 
-## 🗄️ Cấu trúc Firestore Database
-
-### Collection: quiz
-```
-quiz/
-├── {quizId}/
-│   ├── title: string
-│   ├── questionCount: number
-│   ├── duration: number (phút)
-│   ├── status: string ("available" | "archived")
-│   └── questions/ (subcollection)
-│       └── {questionId}/
-│           ├── question: string
-│           ├── options: array<string>
-│           └── correctAnswer: string ("A" | "B" | "C" | "D")
+Câu 2: 2 + 2 = ?
+A. 2
+B. 3
+C. 4
+D. 5
+Đáp án: C
 ```
 
-### Collection: submissions
-```
-submissions/
-└── {submissionId}/
-    ├── studentId: string
-    ├── quizId: string
-    ├── quizTitle: string
-    ├── score: number
-    ├── totalQuestions: number
-    ├── answers: map<string, string>
-    ├── timestamp: timestamp
-    ├── timeSpent: number (giây)
-    └── antiCheat: object                  # 🆕 Dữ liệu chống gian lận
-        ├── appSwitchCount: number         # Số lần chuyển app
-        ├── tabSwitchCount: number         # Số lần chuyển tab (Web)
-        ├── screenshotAttempts: number     # Số lần cố chụp màn hình
-        ├── devToolsAttempts: number       # Số lần mở DevTools
-        ├── copyPasteAttempts: number      # Số lần copy/paste
-        ├── warningCount: number           # Tổng cảnh báo
-        ├── noFaceWarnings: number         # 🆕 Không có mặt (Web)
-        ├── multipleFaceWarnings: number   # 🆕 Nhiều người (Web)
-        ├── wasFullscreen: boolean         # Có dùng fullscreen không
-        ├── flagged: boolean               # Có nghi ngờ không
-        ├── platform: string               # 🆕 Nền tảng (Web/Android/iOS)
-        ├── patternAnalysis: object        # Phân tích pattern
-        │   ├── averageTimePerQuestion: number
-        │   ├── suspiciouslyFastAnswers: number
-        │   ├── suspiciouslySlowAnswers: number
-        │   └── consistency: string
-        └── activityLog: array<object>     # Log chi tiết
-            └── {
-                  timestamp: timestamp,
-                  type: string,
-                  details: string,
-                  severity: string
-                }
+### Định dạng Excel (Import học sinh)
+
+| Cột | Tên cột | Mô tả | Bắt buộc |
+|-----|---------|-------|----------|
+| A | STT | Số thứ tự | Không |
+| B | Số thẻ SV | Mã sinh viên (9 chữ số) | **Có** |
+| C | Họ tên SV | Họ và tên đầy đủ | **Có** |
+| D | Lớp sinh hoạt | Lớp (optional) | Không |
+| E | Số điện thoại | SĐT (optional) | Không |
+
+**Lưu ý**: Dòng đầu tiên (header) sẽ bị bỏ qua.
+
+## 🚀 Cài đặt và Chạy
+
+### 1. Yêu cầu hệ thống
+- Flutter SDK ≥ 3.0.0
+- Dart SDK ≥ 3.0.0
+- Firebase CLI (để setup Firebase)
+
+### 2. Clone project
+```bash
+git clone https://github.com/yourusername/student-quiz-app.git
+cd student-quiz-app
 ```
 
-### Collection: suspicious_activities (🆕)
-```
-suspicious_activities/
-└── {activityId}/
-    ├── submissionId: string
-    ├── studentId: string
-    ├── quizId: string
-    ├── activityType: string
-    │   # Types: "app_switch", "tab_switch", "screenshot_attempt",
-    │   #         "print_screen", "devtools_attempt", "copy_attempt",
-    │   #         "no_face_detected", "multiple_faces_detected", etc.
-    ├── details: string
-    ├── severity: string ("low" | "medium" | "high")
-    └── timestamp: timestamp
+### 3. Cài đặt dependencies
+```bash
+flutter pub get
 ```
 
-## 🔐 Firebase Security Rules
+### 4. Cấu hình Firebase
+
+#### a. Tạo Firebase Project
+1. Truy cập [Firebase Console](https://console.firebase.google.com/)
+2. Tạo project mới
+3. Enable **Authentication** → Bật **Microsoft** provider
+4. Enable **Firestore Database** → Chế độ production
+5. Thiết lập **Security Rules**
+
+#### b. Firebase Security Rules
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Quiz collection - read only
-    match /quiz/{quizId} {
-      allow read: if true;
-      allow write: if false; // Only admin can write
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // Classes collection
+    match /classes/{classId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+        request.resource.data.teacherId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+        resource.data.teacherId == request.auth.uid;
       
-      match /questions/{questionId} {
-        allow read: if true;
-        allow write: if false;
+      // Students subcollection
+      match /students/{studentId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && 
+          get(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
+      }
+      
+      // Quizzes subcollection
+      match /quizzes/{quizId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && 
+          get(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
+      }
+      
+      // Schedules subcollection
+      match /schedules/{scheduleId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && 
+          get(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
       }
     }
     
-    // Submissions - students can only read/write their own
-    match /submissions/{submissionId} {
-      allow read: if request.auth != null && 
-                     resource.data.studentId == request.auth.uid;
-      allow create: if request.auth != null && 
-                       request.resource.data.studentId == request.auth.uid;
-      allow update: if request.auth != null && 
-                       resource.data.studentId == request.auth.uid;
+    // Global quiz collection
+    match /quiz/{quizId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null;
+      
+      match /questions/{questionId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
+      }
     }
     
-    // Suspicious activities - students can create, admins can read all
-    match /suspicious_activities/{activityId} {
-      allow read: if request.auth != null; // Admin only in production
+    // Submissions collection
+    match /submissions/{submissionId} {
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
+      allow update: if false; // Không cho phép sửa sau khi nộp
+      allow delete: if false; // Không cho phép xóa
     }
   }
 }
 ```
 
-## 📊 Firebase Indexes
+#### c. Thêm Firebase vào Flutter
 
-Tạo các composite indexes sau:
-
-1. **Submissions by student and time**:
-   - Collection: `submissions`
-   - Fields: `studentId` (Ascending) + `timestamp` (Descending)
-
-2. **Suspicious activities by student**:
-   - Collection: `suspicious_activities`
-   - Fields: `studentId` (Ascending) + `timestamp` (Descending)
-
-3. **Suspicious activities by submission**:
-   - Collection: `suspicious_activities`
-   - Fields: `submissionId` (Ascending) + `timestamp` (Descending)
-
-Hoặc click vào link trong error message khi chạy app lần đầu.
-
-## 🚀 Cài đặt và Chạy
-
-### 1. Clone repository
 ```bash
-git clone https://github.com/DuyNguyen25092004/CNPM_TAKING_EXAM_SYSTEM.git
-cd student-quiz-app
+# Cài đặt Firebase CLI
+npm install -g firebase-tools
+
+# Đăng nhập
+firebase login
+
+# Cấu hình Firebase cho Flutter
+flutterfire configure
 ```
 
-### 2. Cài đặt dependencies
-```bash
-flutter pub get
-```
+Chọn Firebase project và platforms (Web, Android, iOS)
 
-### 3. Cấu hình Firebase
+### 5. Cấu hình Microsoft Authentication
 
-#### Cho Android:
-1. Tải `google-services.json` từ Firebase Console
-2. Đặt vào `android/app/`
+1. Truy cập [Azure Portal](https://portal.azure.com/)
+2. Đăng ký ứng dụng (App Registration)
+3. Lấy **Client ID** và **Client Secret**
+4. Thêm Redirect URIs:
+   - `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler`
+5. Cấu hình trong Firebase Console → Authentication → Microsoft
 
-#### Cho iOS:
-1. Tải `GoogleService-Info.plist` từ Firebase Console
-2. Đặt vào `ios/Runner/`
-
-#### Cho Web:
-1. Thêm Firebase config vào `web/index.html`
-2. Thêm TensorFlow.js và Face Detection scripts (xem phần Dependencies)
-
-### 4. Chạy ứng dụng
+### 6. Chạy ứng dụng
 
 ```bash
-# Web (với camera proctoring)
+# Web
 flutter run -d chrome
 
 # Android
@@ -351,165 +392,107 @@ flutter run -d android
 
 # iOS
 flutter run -d ios
+
+# Desktop (Windows)
+flutter run -d windows
 ```
 
 ## 📱 Hướng dẫn sử dụng
 
-### Cho Học sinh
+### Giáo viên
 
-#### 1. Xem Dashboard
-- Số lượng bài thi khả dụng
-- 5 bài thi gần nhất đã hoàn thành
-- Truy cập nhanh vào các tính năng
+1. **Đăng nhập** bằng tài khoản Microsoft
+2. **Tạo lớp học**:
+   - Vào "Quản lý lớp" → "Tạo lớp mới"
+   - Nhập tên và mô tả
+3. **Thêm học sinh**:
+   - Thủ công: Nhập email và tên
+   - Import Excel: Chọn file .xlsx/.xls
+4. **Tạo đề thi**:
+   - **Cách 1**: Kho đề thi → Upload PDF/TXT
+   - **Cách 2**: Trong lớp → "Tạo đề thi mới"
+5. **Lên lịch** (optional):
+   - Chọn bài thi → Icon lịch
+   - Đặt thời gian mở/đóng
+6. **Xem kết quả**:
+   - Tab "Kết quả" → Xem, tìm kiếm, sắp xếp
 
-#### 2. Làm bài thi (với Camera Proctoring trên Web)
-- Chọn tab "Làm bài thi"
-- Chọn bài thi từ danh sách
-- **Trên Web**: Cho phép truy cập camera khi được yêu cầu
-  - Hệ thống sẽ load mô hình nhận diện khuôn mặt (5-15 giây)
-  - Đợi đến khi thấy "Face Detection Ready"
-  - Click "Bắt đầu thi"
-- **Trên Mobile**: Bắt đầu thi trực tiếp (không cần camera)
-- Làm bài trong thời gian cho phép
-- Hệ thống sẽ giám sát:
-  - Camera và khuôn mặt (Web)
-  - Chuyển app/tab
-  - Cố gắng chụp màn hình
-  - Các hành vi gian lận khác
-- Click "Nộp bài" hoặc đợi hết giờ
+### Học sinh
 
-#### 3. Xem Analytics
-- Chọn tab "Phân tích"
-- Xem tổng quan hiệu suất
-- Phân tích xu hướng học tập
-- Xác định điểm mạnh/yếu
+1. **Đăng nhập** bằng email sinh viên (9 chữ số)
+2. **Chọn lớp học** từ danh sách
+3. **Xem bài thi khả dụng**:
+   - Tab "Bài thi"
+   - Kiểm tra trạng thái (Đang mở/Chưa mở/Đã đóng)
+4. **Làm bài**:
+   - Nhấn "Làm bài" → Vào fullscreen
+   - Không chuyển tab, không thoát fullscreen
+   - Chú ý số vi phạm hiển thị trên header
+5. **Xem lịch sử**:
+   - Tab "Lịch sử" → Xem lại bài đã làm
 
-#### 4. Xem lịch sử
-- Chọn tab "Lịch sử"
-- Click vào icon mắt để xem chi tiết
-- Xem cả báo cáo anti-cheat (nếu có vi phạm)
+## ⚙️ Cấu hình nâng cao
 
-### 🎯 Best Practices khi thi
+### Thay đổi số vi phạm mặc định
 
-✅ **Nên**:
-- Ngồi ở nơi có ánh sáng tốt (Web - camera)
-- Đảm bảo khuôn mặt luôn trong khung hình (Web)
-- Tập trung làm bài không chuyển tab/app
-- Đọc kỹ câu hỏi trước khi trả lời
+Trong `class_create_quiz_page.dart` hoặc `quiz_bank_create_page.dart`:
 
-❌ **Không nên**:
-- Chuyển tab/app trong khi làm bài
-- Cố gắng chụp màn hình câu hỏi
-- Để người khác vào camera (Web)
-- Mở DevTools hoặc View Source (Web)
-- Copy/paste nội dung câu hỏi
-
-## 🔍 Troubleshooting
-
-### Lỗi Camera (Web)
-
-**"Không thể truy cập camera"**:
-- Kiểm tra quyền camera trong browser settings
-- Đảm bảo không có app nào đang dùng camera
-- Thử restart browser
-- Đảm bảo đang chạy trên HTTPS (localhost:// cũng OK)
-
-**"Face Detection không load"**:
-- Kiểm tra TensorFlow.js scripts trong `index.html`
-- Xem console log để biết lỗi cụ thể
-- Thử refresh trang
-- Kiểm tra internet connection (cần download model)
-
-**Camera bị đóng băng**:
-- Click nút "Khởi động lại camera" trên UI
-- Kiểm tra console log
-- Thử đóng tất cả tabs khác đang dùng camera
-
-**Nút "Bắt đầu thi" bị delay/không nhấn được ngay**:
-- Đây là hành vi bình thường khi face detection vừa sẵn sàng
-- Hệ thống cần 1-2 giây để verify camera và face detection hoạt động ổn định
-- Nếu delay quá lâu (>5 giây), kiểm tra console log và thử restart camera
-
-### Lỗi Firebase
-
-**Missing index**:
-1. Click vào link trong error message
-2. Hoặc tạo index thủ công trong Firebase Console
-3. Đợi vài phút để index được build
-
-**Firebase not initialized**:
-1. Kiểm tra config files đã được thêm đúng chưa
-2. Chạy `flutter clean` và `flutter pub get`
-3. Rebuild project
-
-### Lỗi Anti-Cheat
-
-**Quá nhiều cảnh báo giả (false positives)**:
-- Điều chỉnh threshold trong code
-- Kiểm tra platform detection
-- Xem logs để biết nguyên nhân cụ thể
-
-**Tab switch không được phát hiện (Web)**:
-- Kiểm tra Page Visibility API có được hỗ trợ không
-- Xem console logs
-- Thử browser khác
-
-## 🎨 Customization
-
-### Thay đổi Threshold Anti-Cheat
-
-Trong `quiz_taking_page.dart`:
 ```dart
-// Số cảnh báo tối đa trước khi auto-submit
-if (_warningCount >= 3) {  // Thay 3 thành số khác
-  _showTooManyViolationsDialog();
+final _maxViolationsController = TextEditingController(text: '5'); // Đổi '5' thành số khác
+```
+
+### Tùy chỉnh thời gian làm bài mặc định
+
+```dart
+final _durationController = TextEditingController(text: '30'); // 30 phút
+```
+
+### Chỉnh sửa format email sinh viên
+
+Trong `user_service.dart`:
+
+```dart
+static String extractStudentId(String? email) {
+  // Tùy chỉnh regex để match format email của trường bạn
+  final digits = username.replaceAll(RegExp(r'[^0-9]'), '');
+  if (digits.length >= 9) {
+    return digits.substring(0, 9); // Lấy 9 chữ số đầu
+  }
+  return digits;
 }
 ```
 
-### Thay đổi Màu sắc
+## 🐛 Troubleshooting
 
-Trong `utils/constants.dart`:
-```dart
-static const Color primaryColor = Colors.blue;  // Đổi màu chủ đạo
-static const Color successColor = Colors.green;
-static const Color warningColor = Colors.orange;
+### Lỗi: "Firebase not initialized"
+```bash
+flutter clean
+flutter pub get
+flutterfire configure
 ```
 
-### Thêm Loại Câu Hỏi Mới
+### Lỗi: "Microsoft login failed"
+- Kiểm tra Client ID/Secret trong Firebase Console
+- Kiểm tra Redirect URIs trong Azure Portal
+- Xóa cache trình duyệt
 
-Hiện tại chỉ hỗ trợ trắc nghiệm 4 đáp án. Để thêm loại mới:
-1. Cập nhật `Question` model
-2. Thêm UI component mới trong `quiz_taking_page.dart`
-3. Cập nhật logic chấm điểm trong `firebase_service.dart`
+### Lỗi: "Permission denied" khi đọc/ghi Firestore
+- Kiểm tra Security Rules
+- Đảm bảo user đã đăng nhập
 
-## 🚧 Tính năng đang phát triển
-
-- [ ] Authentication với Firebase Auth
-- [ ] Teacher Panel (tạo và quản lý bài thi)
-- [ ] Admin Panel (quản lý hệ thống)
-- [ ] Export báo cáo ra Excel/PDF
-- [ ] Thống kê nâng cao với charts
-- [ ] Phân loại bài thi theo môn học/chủ đề
-- [ ] Video recording (lưu video thi) - Web
-- [ ] Real-time monitoring dashboard cho giáo viên
-- [ ] Machine learning để phát hiện gian lận nâng cao
-- [ ] Hỗ trợ nhiều loại câu hỏi (tự luận, điền khuyết, ...)
-- [ ] Mobile camera proctoring (Android/iOS)
+### Lỗi: "Fullscreen not working"
+- Chỉ hoạt động trên Web với HTTPS
+- Desktop/Mobile không cần fullscreen API
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
-## 👥 Contributing
+## 👥 Đóng góp
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📧 Contact
-
-For questions or support, please contact: [your-email@example.com]
-
----
-
-**Phát triển bởi [Your Name] - 2024**
-
-*"Công nghệ vì một nền giáo dục công bằng và minh bạch"*
+Mọi đóng góp đều được chào đón! Vui lòng:
+1. Fork project
+2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
