@@ -104749,7 +104749,8 @@ r.toString
 q.cy=new A.C(s,r)
 A.a_("\u2705 Entered fullscreen successfully")
 r=q.cy
-A.a_("\ud83d\udcd0 Updated window size: "+A.l(r.a)+"x"+A.l(r.b))}else if(!q.w&&!q.x){if(q.cx&&!q.CW){A.a_("\u23ed\ufe0f Ignoring fullscreen exit during initial entry process")
+A.a_("\ud83d\udd0d Updated window size: "+A.l(r.a)+"x"+A.l(r.b))}else if(!q.w&&!q.x){if(!q.CW){A.a_("\u23ed\ufe0f Ignoring fullscreen exit - never entered fullscreen yet")
+return}if(q.cx){A.a_("\u23ed\ufe0f Ignoring fullscreen exit during entry process")
 return}s=q.cx=!1
 A.a_("\u26a0\ufe0f User exited fullscreen mode")
 if(q.c!=null)q.M(new A.aJw(q))
