@@ -17,11 +17,40 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
+
+  // Kiểm tra xem bài thi đã đóng chưa
+  Future<bool> _isQuizClosed(String quizId) async {
+    try {
+      // Lấy schedule từ quiz_schedules
+      final scheduleQuery = await FirebaseFirestore.instance
+          .collection('quiz_schedules')
+          .where('classId', isEqualTo: widget.classId)
+          .where('quizId', isEqualTo: quizId)
+          .limit(1)
+          .get();
+
+      // Không có schedule → cho phép xem
+      if (scheduleQuery.docs.isEmpty) return true;
+
+      final scheduleData = scheduleQuery.docs.first.data();
+      final closeTime = scheduleData['closeTime'] as Timestamp?;
+
+      // Không có closeTime → cho phép xem
+      if (closeTime == null) return true;
+
+      // So sánh với thời gian hiện tại
+      return DateTime.now().isAfter(closeTime.toDate());
+    } catch (e) {
+      print('Error checking quiz close time: $e');
+      return false; // Lỗi → không cho xem
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header (Giống Teacher Panel)
+        // Header
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -66,7 +95,7 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
         ),
 
-        // List Content
+        // List submissions
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -101,16 +130,13 @@ class _HistoryPageState extends State<HistoryPage> {
                 return _buildEmptyState();
               }
 
-              final submissions = snapshot.data!.docs;
-
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: submissions.length,
+                itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
-                  final doc = submissions[index];
+                  final doc = snapshot.data!.docs[index];
                   final data = doc.data() as Map<String, dynamic>;
 
-                  // Tính toán hiển thị điểm số (Giống giáo viên)
                   final score = data['score'] ?? 0;
                   final total = data['totalQuestions'] ?? 1;
                   final percentage = (score / total * 100);
@@ -133,12 +159,12 @@ class _HistoryPageState extends State<HistoryPage> {
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
-                        onTap: () => _showSubmissionDetail(context, doc.id, data),
+                        onTap: () => _handleSubmissionTap(context, doc.id, data),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              // Score Circle (Gradient giống giáo viên)
+                              // Score circle
                               Container(
                                 width: 60,
                                 height: 60,
@@ -245,51 +271,154 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              shape: BoxShape.circle,
+  // Xử lý khi click vào submission
+  Future<void> _handleSubmissionTap(
+      BuildContext context,
+      String submissionId,
+      Map<String, dynamic> data,
+      ) async {
+    final quizId = data['quizId'] as String?;
+
+    if (quizId == null) {
+      _showErrorSnackBar('Không tìm thấy thông tin bài thi');
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    // Kiểm tra bài thi đã đóng chưa
+    final isClosed = await _isQuizClosed(quizId);
+
+    // Close loading
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
+
+    if (!isClosed) {
+      // Bài thi chưa đóng → không cho xem chi tiết
+      if (context.mounted) {
+        _showQuizNotClosedDialog(context, data);
+      }
+    } else {
+      // Bài thi đã đóng → cho xem chi tiết
+      if (context.mounted) {
+        _showSubmissionDetail(context, submissionId, data);
+      }
+    }
+  }
+
+  // Dialog thông báo bài thi chưa đóng
+  void _showQuizNotClosedDialog(BuildContext context, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.orange.shade50, Colors.white],
             ),
-            child: Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(24),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Bạn chưa làm bài thi nào',
-            style: TextStyle(fontSize: 16, color: Colors.grey[500], fontWeight: FontWeight.w500),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock_clock_rounded,
+                  color: Colors.orange.shade700,
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Bài thi chưa đóng',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Bạn chỉ có thể xem lại chi tiết bài làm sau khi bài thi đã đóng theo lịch của giáo viên.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Hiển thị điểm số
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.star, color: Colors.amber.shade700, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Điểm của bạn: ${data['score']}/${data['totalQuestions']}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Đã hiểu',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Color _getScoreColor(double percentage) {
-    if (percentage >= 80) return Colors.green.shade600;
-    if (percentage >= 50) return Colors.orange.shade600;
-    return Colors.red.shade600;
-  }
-
-  String _formatDate(dynamic timestamp) {
-    if (timestamp == null) return 'N/A';
-    try {
-      final date = (timestamp as Timestamp).toDate();
-      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return 'N/A';
-    }
-  }
-
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes}p ${secs}s';
-  }
-
+  // Hiển thị chi tiết bài làm - LOGIC TỪ FILE CŨ
   Future<void> _showSubmissionDetail(
       BuildContext context,
       String submissionId,
@@ -327,15 +456,83 @@ class _HistoryPageState extends State<HistoryPage> {
         ),
       );
     } catch (e) {
-      Navigator.pop(context); // Hide loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải đề thi: $e')),
-      );
+      if (context.mounted) {
+        Navigator.pop(context); // Hide loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải đề thi: $e')),
+        );
+      }
     }
+  }
+
+  // Helper widgets
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.shade300),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Bạn chưa làm bài thi nào',
+            style: TextStyle(fontSize: 16, color: Colors.grey[500], fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Color _getScoreColor(double percentage) {
+    if (percentage >= 80) return Colors.green.shade600;
+    if (percentage >= 50) return Colors.orange.shade600;
+    return Colors.red.shade600;
+  }
+
+  String _formatDate(dynamic timestamp) {
+    if (timestamp == null) return 'N/A';
+    try {
+      final date = (timestamp as Timestamp).toDate();
+      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'N/A';
+    }
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes}p ${secs}s';
   }
 }
 
-// Dialog chi tiết bài làm (Clone từ Teacher Panel)
+// =============================================
+// DETAIL DIALOG - LOGIC TỪ FILE CŨ
+// =============================================
+
 class _DetailDialog extends StatelessWidget {
   final Map<String, dynamic> submission;
   final List<QueryDocumentSnapshot> questions;
