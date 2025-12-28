@@ -1,6 +1,9 @@
 // lib/screens/teacher/class_results_page.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
 
 class ClassResultsPage extends StatefulWidget {
   final String classId;
@@ -15,13 +18,254 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String? _selectedQuizFilter;
-  String _sortBy = 'time'; // 'time', 'score', 'suspicious'
-  bool _sortAscending = false; // false = descending (high to low, recent first)
+  String _sortBy = 'studentId';
+  bool _sortAscending = false;
+  bool _isExporting = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Hàm lấy tên học sinh từ classId và studentId
+  Future<String> _getStudentName(String studentId) async {
+    try {
+      final studentDoc = await FirebaseFirestore.instance
+          .collection('classes')
+          .doc(widget.classId)
+          .collection('students')
+          .doc(studentId)
+          .get();
+
+      if (studentDoc.exists) {
+        return studentDoc.data()?['name'] ?? 'Không có tên';
+      }
+      return 'Không có tên';
+    } catch (e) {
+      return 'Không có tên';
+    }
+  }
+
+  // Hàm xuất Excel
+  Future<void> _exportToExcel() async {
+    setState(() => _isExporting = true);
+
+    try {
+      // Lấy dữ liệu submissions
+      final submissionsSnapshot = await FirebaseFirestore.instance
+          .collection('submissions')
+          .where('classId', isEqualTo: widget.classId)
+          .get();
+
+      if (submissionsSnapshot.docs.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('⚠️ Không có dữ liệu để xuất'),
+              backgroundColor: Colors.orange.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      var submissions = submissionsSnapshot.docs;
+
+      // Apply filters
+      if (_searchQuery.isNotEmpty) {
+        submissions = submissions.where((doc) {
+          final data = doc.data();
+          final studentId = (data['studentId'] ?? '').toString().toLowerCase();
+          final studentName = (data['studentName'] ?? '')
+              .toString()
+              .toLowerCase();
+          return studentId.contains(_searchQuery) ||
+              studentName.contains(_searchQuery);
+        }).toList();
+      }
+
+      if (_selectedQuizFilter != null) {
+        submissions = submissions.where((doc) {
+          final data = doc.data();
+          return data['quizId'] == _selectedQuizFilter;
+        }).toList();
+      }
+
+      // Sort
+      submissions.sort((a, b) {
+        final dataA = a.data();
+        final dataB = b.data();
+
+        int comparison = 0;
+
+        if (_sortBy == 'score') {
+          final scoreA = dataA['score'] ?? 0;
+          final scoreB = dataB['score'] ?? 0;
+          final totalA = dataA['totalQuestions'] ?? 1;
+          final totalB = dataB['totalQuestions'] ?? 1;
+          final percentA = (scoreA / totalA * 100);
+          final percentB = (scoreB / totalB * 100);
+          comparison = percentB.compareTo(percentA);
+        } else if (_sortBy == 'suspicious') {
+          final susA = dataA['suspiciousActionCount'] ?? 0;
+          final susB = dataB['suspiciousActionCount'] ?? 0;
+          comparison = susB.compareTo(susA);
+        } else if (_sortBy == 'studentId') {
+          // ← THÊM DÒNG NÀY
+          final idA = dataA['studentId'] ?? ''; // ← THÊM DÒNG NÀY
+          final idB = dataB['studentId'] ?? ''; // ← THÊM DÒNG NÀY
+          comparison = idA.compareTo(idB); // ← THÊM DÒNG NÀY
+        } else {
+          final timeA = dataA['timestamp'] as Timestamp?;
+          final timeB = dataB['timestamp'] as Timestamp?;
+          if (timeA == null || timeB == null) return 0;
+          comparison = timeB.compareTo(timeA);
+        }
+
+        return _sortAscending ? -comparison : comparison;
+      });
+
+      // Tạo Excel file
+      var excel = Excel.createExcel();
+      Sheet sheetObject = excel['Kết quả thi'];
+
+      // Xóa sheet mặc định
+      excel.delete('Sheet1');
+
+      // Header style
+      CellStyle headerStyle = CellStyle(
+        bold: true,
+        fontSize: 12,
+        backgroundColorHex: ExcelColor.blue,
+        fontColorHex: ExcelColor.white,
+        horizontalAlign: HorizontalAlign.Center,
+        verticalAlign: VerticalAlign.Center,
+      );
+
+      // Thêm headers
+      List<String> headers = ['STT', 'Mã sinh viên', 'Họ và tên', 'Điểm số'];
+
+      for (int i = 0; i < headers.length; i++) {
+        var cell = sheetObject.cell(
+          CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+        );
+        cell.value = TextCellValue(headers[i]);
+        cell.cellStyle = headerStyle;
+      }
+
+      // Data style
+      CellStyle dataStyle = CellStyle(
+        fontSize: 11,
+        verticalAlign: VerticalAlign.Center,
+      );
+
+      CellStyle warningStyle = CellStyle(
+        fontSize: 11,
+        verticalAlign: VerticalAlign.Center,
+        // backgroundColorHex: ExcelColor.lightYellow,
+      );
+
+      // Thêm dữ liệu
+      for (int i = 0; i < submissions.length; i++) {
+        final data = submissions[i].data();
+        final studentId = data['studentId'] ?? 'Unknown';
+        final studentName =
+            data['studentName'] ?? await _getStudentName(studentId);
+        final score = data['score'] ?? 0;
+
+        int rowIndex = i + 1;
+
+        List<dynamic> rowData = [i + 1, studentId, studentName, score];
+
+        for (int j = 0; j < rowData.length; j++) {
+          var cell = sheetObject.cell(
+            CellIndex.indexByColumnRow(columnIndex: j, rowIndex: rowIndex),
+          );
+
+          if (rowData[j] is int) {
+            cell.value = IntCellValue(rowData[j]);
+          } else if (rowData[j] is double) {
+            cell.value = DoubleCellValue(rowData[j]);
+          } else {
+            cell.value = TextCellValue(rowData[j].toString());
+          }
+        }
+      }
+
+      // Auto-fit columns
+      for (int i = 0; i < headers.length; i++) {
+        sheetObject.setColumnWidth(i, 18);
+      }
+
+      // Lấy tên lớp
+      final classDoc = await FirebaseFirestore.instance
+          .collection('classes')
+          .doc(widget.classId)
+          .get();
+      final className = classDoc.data()?['name'] ?? 'Lop';
+
+      // Tạo tên file
+      final fileName = 'KetQua_${className}.xlsx';
+
+      // Lưu file
+      var fileBytes = excel.save(fileName: "$fileName");
+      if (fileBytes == null) {
+        throw Exception('Không thể tạo file Excel');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('✅ Đã xuất ${submissions.length} kết quả'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('❌ Lỗi: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  String _formatDateForExcel(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -63,12 +307,43 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    'Kết quả thi',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  const Expanded(
+                    child: Text(
+                      'Kết quả thi',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  // Export button
+                  ElevatedButton.icon(
+                    onPressed: _isExporting ? null : _exportToExcel,
+                    icon: _isExporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.download_rounded, size: 18),
+                    label: Text(
+                      _isExporting ? 'Đang xuất...' : 'Xuất Excel',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ],
@@ -79,8 +354,8 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Tìm kiếm mã học sinh...',
-                  hintStyle: TextStyle(fontSize: 14),
+                  hintText: 'Tìm kiếm mã học sinh hoặc tên...',
+                  hintStyle: const TextStyle(fontSize: 14),
                   prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -138,7 +413,7 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                             child: DropdownButton<String>(
                               value: _selectedQuizFilter,
                               isExpanded: true,
-                              icon: Icon(Icons.arrow_drop_down, size: 20),
+                              icon: const Icon(Icons.arrow_drop_down, size: 20),
                               hint: Row(
                                 children: [
                                   Icon(
@@ -147,18 +422,18 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                                     color: Colors.grey[600],
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(
+                                  const Text(
                                     'Lọc bài thi',
                                     style: TextStyle(fontSize: 13),
                                   ),
                                 ],
                               ),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 13,
                                 color: Colors.black87,
                               ),
                               items: [
-                                DropdownMenuItem(
+                                const DropdownMenuItem(
                                   value: null,
                                   child: Text(
                                     'Tất cả',
@@ -173,7 +448,7 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                                     child: Text(
                                       data['title'] ?? 'Bài thi',
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontSize: 13),
+                                      style: const TextStyle(fontSize: 13),
                                     ),
                                   );
                                 }).toList(),
@@ -206,20 +481,12 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                         child: DropdownButton<String>(
                           value: _sortBy,
                           isExpanded: true,
-                          icon: Icon(Icons.arrow_drop_down, size: 20),
-                          style: TextStyle(fontSize: 13, color: Colors.black87),
-                          dropdownColor: Colors.white,
-                          hint: Row(
-                            children: [
-                              Icon(
-                                Icons.swap_vert_rounded,
-                                size: 16,
-                                color: Colors.blue[700],
-                              ),
-                              const SizedBox(width: 6),
-                              Text('Sắp xếp', style: TextStyle(fontSize: 13)),
-                            ],
+                          icon: const Icon(Icons.arrow_drop_down, size: 20),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black87,
                           ),
+                          dropdownColor: Colors.white,
                           items: const [
                             DropdownMenuItem(
                               value: 'time',
@@ -242,9 +509,20 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                                 style: TextStyle(fontSize: 13),
                               ),
                             ),
+                            DropdownMenuItem(
+                              // ← THÊM DÒNG NÀY
+                              value: 'studentId', // ← THÊM DÒNG NÀY
+                              child: Text(
+                                // ← THÊM DÒNG NÀY
+                                'Mã SV', // ← THÊM DÒNG NÀY
+                                style: TextStyle(
+                                  fontSize: 13,
+                                ), // ← THÊM DÒNG NÀY
+                              ), // ← THÊM DÒNG NÀY
+                            ),
                           ],
                           onChanged: (value) {
-                            setState(() => _sortBy = value ?? 'time');
+                            setState(() => _sortBy = value ?? 'studentId');
                           },
                         ),
                       ),
@@ -338,7 +616,11 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                   final studentId = (data['studentId'] ?? '')
                       .toString()
                       .toLowerCase();
-                  return studentId.contains(_searchQuery);
+                  final studentName = (data['studentName'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  return studentId.contains(_searchQuery) ||
+                      studentName.contains(_searchQuery);
                 }).toList();
               }
 
@@ -372,15 +654,17 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                   final susA = dataA['suspiciousActionCount'] ?? 0;
                   final susB = dataB['suspiciousActionCount'] ?? 0;
                   comparison = susB.compareTo(susA);
+                } else if (_sortBy == 'studentId') {
+                  final idA = dataA['studentId'] ?? '';
+                  final idB = dataB['studentId'] ?? '';
+                  comparison = idA.compareTo(idB);
                 } else {
-                  // Sort by time (default)
                   final timeA = dataA['timestamp'] as Timestamp?;
                   final timeB = dataB['timestamp'] as Timestamp?;
                   if (timeA == null || timeB == null) return 0;
                   comparison = timeB.compareTo(timeA);
                 }
 
-                // Reverse if ascending
                 return _sortAscending ? -comparison : comparison;
               });
 
@@ -394,6 +678,8 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                   final total = data['totalQuestions'] ?? 1;
                   final percentage = (score / total * 100);
                   final scoreColor = _getScoreColor(percentage);
+                  final studentId = data['studentId'] ?? 'Unknown';
+                  final studentName = data['studentName'] as String?;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -474,16 +760,37 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: Text(
-                                            'HS: ${data['studentId'] ?? 'Unknown'}',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
+                                          child: studentName != null
+                                              ? Text(
+                                                  studentName,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                    color: Colors.black87,
+                                                  ),
+                                                )
+                                              : FutureBuilder<String>(
+                                                  future: _getStudentName(
+                                                    studentId,
+                                                  ),
+                                                  builder:
+                                                      (context, nameSnapshot) {
+                                                        return Text(
+                                                          nameSnapshot.data ??
+                                                              'Đang tải...',
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 16,
+                                                                color: Colors
+                                                                    .black87,
+                                                              ),
+                                                        );
+                                                      },
+                                                ),
                                         ),
-                                        // Suspicious warning badge
                                         if ((data['suspiciousActionCount'] ??
                                                 0) >
                                             0)
@@ -522,6 +829,14 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
                                             ),
                                           ),
                                       ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'MSSV: $studentId',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 13,
+                                      ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -661,6 +976,7 @@ class _ClassResultsPageState extends State<ClassResultsPage> {
   }
 }
 
+// Dialog chi tiết submission (giữ nguyên như code cũ)
 class _SubmissionDetailDialog extends StatelessWidget {
   final Map<String, dynamic> submission;
   final List<QueryDocumentSnapshot> questions;
@@ -681,6 +997,8 @@ class _SubmissionDetailDialog extends StatelessWidget {
     final suspiciousCount = submission['suspiciousActionCount'] ?? 0;
     final cheatingDetected = submission['cheatingDetected'] ?? false;
     final autoSubmitted = submission['autoSubmitted'] ?? false;
+    final studentName = submission['studentName'] ?? 'Không có tên';
+    final studentId = submission['studentId'] ?? 'Unknown';
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -727,19 +1045,29 @@ class _SubmissionDetailDialog extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Chi tiết bài làm',
+                          studentName,
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white.withOpacity(0.95),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
+                          'MSSV: $studentId',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
                           submission['quizTitle'] ?? 'N/A',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.7),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -793,7 +1121,6 @@ class _SubmissionDetailDialog extends StatelessWidget {
                     ],
                   ),
 
-                  // Suspicious Actions Warning (if any)
                   if (suspiciousCount > 0) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -917,7 +1244,6 @@ class _SubmissionDetailDialog extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Question Header
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -966,7 +1292,6 @@ class _SubmissionDetailDialog extends StatelessWidget {
                           ),
                         ),
 
-                        // Options
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(

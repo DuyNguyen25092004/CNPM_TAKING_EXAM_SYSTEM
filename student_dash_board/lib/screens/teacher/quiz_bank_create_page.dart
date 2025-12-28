@@ -491,9 +491,7 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
       final fileName = result.files.single.name;
       final bytes = result.files.single.bytes;
 
-      if (bytes == null) {
-        throw Exception('Không thể đọc file');
-      }
+      if (bytes == null) throw Exception('Không thể đọc file');
 
       String content = '';
       if (fileName.endsWith('.txt')) {
@@ -502,24 +500,96 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
         content = await _extractTextFromPdf(bytes);
       }
 
-      if (content.isEmpty) {
-        throw Exception('File trống hoặc không đọc được nội dung');
-      }
+      if (content.isEmpty) throw Exception('File trống');
 
       setState(() => _uploadProgress = 0.5);
 
-      final questions = _parseQuestions(content);
-
-      if (questions.isEmpty) {
-        throw Exception(
-          'Không tìm thấy câu hỏi nào!\n\n'
-          'Vui lòng kiểm tra định dạng file.',
-        );
-      }
+      // --- GỌI HÀM PARSE MỚI ---
+      final parseResult = _parseQuestions(content);
+      final List<Map<String, dynamic>> questions = parseResult['questions'];
+      final List<String> errors = parseResult['errors'];
 
       setState(() => _uploadProgress = 0.7);
 
-      // Create quiz in global collection with maxSuspiciousActions
+      // --- NẾU CÓ LỖI: HIỆN THÔNG BÁO VÀ DỪNG ---
+      if (errors.isNotEmpty) {
+        setState(() {
+          _isUploading = false;
+          _uploadProgress = 0.0;
+        });
+
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Phát hiện lỗi định dạng'),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tìm thấy ${questions.length} câu hợp lệ, nhưng có ${errors.length} lỗi:',
+                    ),
+                    SizedBox(height: 12),
+                    Flexible(
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: errors.length,
+                          separatorBuilder: (ctx, i) => Divider(),
+                          itemBuilder: (ctx, i) => Text(
+                            '• ${errors[i]}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.red.shade800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Vui lòng sửa file và upload lại.',
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Đóng'),
+                ),
+              ],
+            ),
+          );
+        }
+        return; // Dừng upload
+      }
+
+      // --- NẾU KHÔNG CÓ CÂU HỎI NÀO ---
+      if (questions.isEmpty) {
+        throw Exception('Không tìm thấy câu hỏi nào hợp lệ.');
+      }
+
+      // --- TIẾP TỤC UPLOAD NHƯ CŨ ---
+      // (Phần code bên dưới giữ nguyên logic cũ của bạn, chỉ thay đổi biến questions)
+
+      // ... Logic tạo Quiz trên Firebase ...
       final quizRef = await FirebaseFirestore.instance.collection('quiz').add({
         'title': _titleController.text.trim(),
         'questionCount': questions.length,
@@ -529,10 +599,24 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Add questions to subcollection
       for (var question in questions) {
         await quizRef.collection('questions').add(question);
       }
+
+      // ... (Phần logic assign class nếu là trang class_create_quiz) ...
+      // Nếu là trang class_create_quiz_page, nhớ giữ lại đoạn logic gán vào class nhé!
+      // Ví dụ đoạn này (CHỈ DÀNH CHO class_create_quiz_page.dart):
+      /*
+      if (widget.classId != null) {
+          await FirebaseFirestore.instance
+            .collection('classes')
+            .doc(widget.classId)
+            .collection('quizzes')
+            .doc(quizRef.id)
+            .set({ ... });
+          // update count...
+      }
+      */
 
       setState(() => _uploadProgress = 1.0);
 
@@ -541,44 +625,20 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Tạo đề thi thành công!\nĐã thêm ${questions.length} câu hỏi vào kho',
-                  ),
-                ),
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Thành công! Đã thêm ${questions.length} câu hỏi.'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 3),
           ),
         );
-
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text('Lỗi: $e')),
-              ],
-            ),
-            backgroundColor: Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 5),
-          ),
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -602,66 +662,192 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
     }
   }
 
-  List<Map<String, dynamic>> _parseQuestions(String content) {
-    List<Map<String, dynamic>> questions = [];
+  // List<Map<String, dynamic>> _parseQuestions(String content) {
+  //   List<Map<String, dynamic>> questions = [];
 
-    // Step 1: Replace newlines with placeholder to preserve intentional spaces
+  //   // Step 1: Replace newlines with placeholder to preserve intentional spaces
+  //   content = content.replaceAll('\r\n', '@@NEWLINE@@');
+  //   content = content.replaceAll('\r', '@@NEWLINE@@');
+  //   content = content.replaceAll('\n', '@@NEWLINE@@');
+
+  //   // Step 2: Remove newlines that break Vietnamese characters
+  //   // Remove newlines NOT preceded by space or letter (breaking chars)
+  //   content = content.replaceAll(RegExp(r'(?<![a-zA-Z\s])@@NEWLINE@@'), '');
+  //   // Remove newlines NOT followed by space or letter (breaking chars)
+  //   content = content.replaceAll(RegExp(r'@@NEWLINE@@(?![a-zA-Z\s])'), '');
+  //   // Convert remaining newlines back to spaces
+  //   content = content.replaceAll('@@NEWLINE@@', ' ');
+
+  //   // Step 3: Normalize to NFC to combine Vietnamese characters properly
+  //   content = unorm.nfc(content);
+
+  //   // Step 4: Remove zero-width spaces
+  //   content = content.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+
+  //   // Step 5: Add spaces around markers for proper parsing
+  //   content = content.replaceAll('Câu', ' Câu ');
+  //   content = content.replaceAll('A.', ' A. ');
+  //   content = content.replaceAll('B.', ' B. ');
+  //   content = content.replaceAll('C.', ' C. ');
+  //   content = content.replaceAll('D.', ' D. ');
+  //   content = content.replaceAll('Đápán:', ' Đáp án: ');
+  //   content = content.replaceAll('?', '? ');
+
+  //   // Step 6: Clean up multiple spaces
+  //   content = content.replaceAll(RegExp(r'\s+'), ' ');
+  //   content = content.trim();
+
+  //   // Step 7: Split by "Câu X:" pattern to get individual question blocks
+  //   final parts = content.split(RegExp(r'Câu\s+\d+:'));
+
+  //   // Step 8: Parse each block (skip first empty element)
+  //   for (int i = 1; i < parts.length; i++) {
+  //     final block = parts[i].trim();
+
+  //     final match = RegExp(
+  //       r'^\s*(.+?)\s+A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+Đáp\s*án:\s*([A-D])',
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       questions.add({
+  //         'question': match.group(1)!.trim(),
+  //         'options': [
+  //           match.group(2)!.trim(),
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //         ],
+  //         'correctAnswer': match.group(6)!.trim(),
+  //       });
+  //     }
+  //   }
+
+  //   return questions;
+  // }
+
+  // --- BẮT ĐẦU: XÓA hàm _parseQuestions CŨ và DÁN 2 hàm MỚI vào đây ---
+
+  // 1. Hàm mới: Tự động sửa lỗi format
+  // 1. Hàm chuẩn hóa: Mở rộng để nhận diện thêm đáp án E
+  String _standardizeQuizContent(String content) {
+    // Chuẩn hóa tiêu đề (Giữ nguyên)
+    content = content.replaceAllMapped(
+      RegExp(
+        r'(?:^|\n)\s*(?:Câu|Bài|Question|Q)\s*(\d+)\s*[:.)]?\s*',
+        caseSensitive: false,
+      ),
+      (match) => '\nCâu ${match.group(1)}: ',
+    );
+
+    // SỬA Ở ĐÂY: Thay [a-dA-D] thành [a-eA-E] để nhận diện cả A, B, C, D, E
+    content = content.replaceAllMapped(
+      RegExp(r'(?:^|\n)\s*([a-eA-E])\s*[:.)]\s+', caseSensitive: false),
+      (match) => '\n${match.group(1)!.toUpperCase()}. ',
+    );
+
+    // SỬA Ở ĐÂY: Thay [A-D] thành [A-E] để nhận diện đáp án đúng là E
+    content = content.replaceAllMapped(
+      RegExp(
+        r'(?:^|\n)\s*(?:Đáp\s*án|DA|Answer|Result|KQ|ĐA)\s*[:.]?\s*([A-E])',
+        caseSensitive: false,
+      ),
+      (match) => '\nĐáp án: ${match.group(1)!.toUpperCase()}',
+    );
+
+    return content;
+  }
+
+  // 2. Hàm Parse: Chấp nhận đáp án thứ 4 là D hoặc E
+  // Hàm này trả về Map gồm: 'questions' (list data) và 'errors' (list string)
+  Map<String, dynamic> _parseQuestions(String content) {
+    List<Map<String, dynamic>> questions = [];
+    List<String> errors = [];
+
+    // --- 1. Xử lý xuống dòng & Unicode (Giữ nguyên của bạn) ---
     content = content.replaceAll('\r\n', '@@NEWLINE@@');
     content = content.replaceAll('\r', '@@NEWLINE@@');
     content = content.replaceAll('\n', '@@NEWLINE@@');
-
-    // Step 2: Remove newlines that break Vietnamese characters
-    // Remove newlines NOT preceded by space or letter (breaking chars)
     content = content.replaceAll(RegExp(r'(?<![a-zA-Z\s])@@NEWLINE@@'), '');
-    // Remove newlines NOT followed by space or letter (breaking chars)
     content = content.replaceAll(RegExp(r'@@NEWLINE@@(?![a-zA-Z\s])'), '');
-    // Convert remaining newlines back to spaces
-    content = content.replaceAll('@@NEWLINE@@', ' ');
-
-    // Step 3: Normalize to NFC to combine Vietnamese characters properly
+    content = content.replaceAll('@@NEWLINE@@', '\n');
     content = unorm.nfc(content);
-
-    // Step 4: Remove zero-width spaces
     content = content.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
 
-    // Step 5: Add spaces around markers for proper parsing
-    content = content.replaceAll('Câu', ' Câu ');
-    content = content.replaceAll('A.', ' A. ');
-    content = content.replaceAll('B.', ' B. ');
-    content = content.replaceAll('C.', ' C. ');
-    content = content.replaceAll('D.', ' D. ');
-    content = content.replaceAll('Đápán:', ' Đáp án: ');
-    content = content.replaceAll('?', '? ');
+    // --- 2. Chuẩn hóa (Giữ nguyên của bạn) ---
+    content = _standardizeQuizContent(content);
 
-    // Step 6: Clean up multiple spaces
-    content = content.replaceAll(RegExp(r'\s+'), ' ');
+    content = content.replaceAll(RegExp(r'[ \t]+'), ' ');
     content = content.trim();
 
-    // Step 7: Split by "Câu X:" pattern to get individual question blocks
-    final parts = content.split(RegExp(r'Câu\s+\d+:'));
+    // --- 3. Tách khối câu hỏi ---
+    // Tách dựa trên "Câu X:" nhưng giữ lại phần tách
+    final parts = content.split(RegExp(r'(?=Câu\s+\d+:)'));
 
-    // Step 8: Parse each block (skip first empty element)
-    for (int i = 1; i < parts.length; i++) {
-      final block = parts[i].trim();
+    for (var block in parts) {
+      block = block.trim();
+      if (block.isEmpty) continue;
 
+      // Regex chính xác của bạn
       final match = RegExp(
-        r'^\s*(.+?)\s+A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+Đáp\s*án:\s*([A-D])',
+        r'Câu\s+(\d+):\s*(.+?)\s+A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+(?:D|E)\.\s+(.+?)\s+Đáp\s*án:\s*([A-E])',
+        caseSensitive: false,
+        dotAll: true,
       ).firstMatch(block);
 
       if (match != null) {
+        // --- TRƯỜNG HỢP ĐÚNG ---
         questions.add({
-          'question': match.group(1)!.trim(),
+          'question': match.group(2)!.trim(),
           'options': [
-            match.group(2)!.trim(),
             match.group(3)!.trim(),
             match.group(4)!.trim(),
             match.group(5)!.trim(),
+            match.group(6)!.trim(),
           ],
-          'correctAnswer': match.group(6)!.trim(),
+          'correctAnswer': match.group(7)!.trim().toUpperCase(),
         });
+      } else {
+        // --- TRƯỜNG HỢP SAI FORMAT (Phân tích lỗi) ---
+
+        // Lấy số thứ tự câu để báo lỗi
+        final cauMatch = RegExp(r'Câu\s+(\d+):').firstMatch(block);
+        String prefix = cauMatch != null
+            ? "Câu ${cauMatch.group(1)}"
+            : "Một câu hỏi";
+
+        List<String> missingParts = [];
+
+        // Kiểm tra thiếu cái gì
+        if (!block.contains(RegExp(r'A\.', caseSensitive: false)))
+          missingParts.add("A");
+        if (!block.contains(RegExp(r'B\.', caseSensitive: false)))
+          missingParts.add("B");
+        if (!block.contains(RegExp(r'C\.', caseSensitive: false)))
+          missingParts.add("C");
+        if (!block.contains(RegExp(r'(?:D|E)\.', caseSensitive: false)))
+          missingParts.add("D/E");
+        if (!block.contains(RegExp(r'Đáp\s*án:', caseSensitive: false)))
+          missingParts.add("Đáp án");
+
+        String errorMsg;
+        if (missingParts.isNotEmpty) {
+          errorMsg =
+              "$prefix bị lỗi định dạng. Thiếu: ${missingParts.join(', ')}.";
+        } else {
+          errorMsg =
+              "$prefix bị lỗi định dạng. Kiểm tra lại xuống dòng hoặc thứ tự A,B,C,D.";
+        }
+
+        // Thêm trích đoạn ngắn để dễ tìm
+        String snippet = block.length > 50
+            ? block.substring(0, 50).replaceAll('\n', ' ') + "..."
+            : block.replaceAll('\n', ' ');
+        errors.add("$errorMsg\n(Nội dung: $snippet)");
       }
     }
 
-    return questions;
+    return {'questions': questions, 'errors': errors};
   }
-}
+
+  // --- KẾT THÚC ---
+} // <--- Dấu ngoặc đó

@@ -252,7 +252,7 @@ class _ClassDetailPageState extends State<ClassDetailPage>
           .collection('classes')
           .doc(widget.classId)
           .collection('students')
-          .orderBy('name')
+          .orderBy('studentId')
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
