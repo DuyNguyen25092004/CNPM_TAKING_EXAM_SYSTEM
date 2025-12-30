@@ -10,6 +10,12 @@ import 'services/user_service.dart';
 import 'services/auth_sync_service.dart';
 import 'services/quiz_schedule_service.dart';
 
+// IMPORT CÁC TRANG NGÂN HÀNG CÂU HỎI
+import 'screens/teacher/quiz_bank_list_page.dart';
+import 'screens/teacher/question_bank_create_page.dart'; // ✨ ĐỔI TÊN FILE
+import 'screens/teacher/quiz_create_from_bank_page.dart';
+import 'screens/teacher/quiz_bank_question_selector_page.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -31,6 +37,45 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: const AuthWrapper(),
       debugShowCheckedModeBanner: false,
+
+      // ✨ THÊM ROUTES Ở ĐÂY
+      routes: {
+        '/quiz_bank_list': (context) => const QuizBankListPage(),
+        '/question_bank_create': (context) =>
+            const QuestionBankCreatePage(), // ✨ ĐỔI TÊN
+      },
+
+      // ✨ THÊM onGenerateRoute ĐỂ XỬ LÝ ROUTES CÓ ARGUMENTS
+      onGenerateRoute: (settings) {
+        // Route: /quiz_create_from_bank
+        if (settings.name == '/quiz_create_from_bank') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => QuizCreateFromBankPage(
+              bankId: args['bankId'] as String,
+              bankTitle: args['bankTitle'] as String,
+              questionCount: args['questionCount'] as int,
+            ),
+          );
+        }
+
+        // Route: /quiz_bank_question_selector
+        if (settings.name == '/quiz_bank_question_selector') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => QuizBankQuestionSelectorPage(
+              bankId: args['bankId'] as String,
+              bankTitle: args['bankTitle'] as String,
+              quizTitle: args['quizTitle'] as String,
+              duration: args['duration'] as int,
+              maxViolations: args['maxViolations'] as int,
+            ),
+          );
+        }
+
+        // Route không tìm thấy
+        return null;
+      },
     );
   }
 }

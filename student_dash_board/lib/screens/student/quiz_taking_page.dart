@@ -38,7 +38,7 @@ class _QuizTakingPageState extends State<QuizTakingPage>
 
   // Data
   List<QueryDocumentSnapshot> _questions = [];
-  final Map<String, String> _answers = {};
+  final Map<String, dynamic> _answers = {};
 
   // ============================================
   // CHEATING DETECTION VARIABLES
@@ -720,15 +720,30 @@ class _QuizTakingPageState extends State<QuizTakingPage>
     try {
       int score = 0;
 
-      // Calculate score
       for (var doc in _questions) {
         final data = doc.data() as Map<String, dynamic>;
         final qId = doc.id;
-        final correctAnswer = data['correctAnswer'];
-        final studentAnswer = _answers[qId];
+        final correctAnswer =
+            data['correctAnswer']; // Có thể là String hoặc List
+        final studentAnswer = _answers[qId]; // Có thể là String hoặc List
 
-        if (studentAnswer == correctAnswer) {
-          score++;
+        // Logic so sánh điểm mới
+        if (correctAnswer is List) {
+          // Câu hỏi nhiều đáp án: Phải khớp hoàn toàn
+          if (studentAnswer is List) {
+            // Chuyển về Set để so sánh không quan tâm thứ tự, hoặc sort trước khi so sánh
+            final correctSet = Set.from(correctAnswer.map((e) => e.toString()));
+            final studentSet = Set.from(studentAnswer.map((e) => e.toString()));
+            if (correctSet.length == studentSet.length &&
+                correctSet.containsAll(studentSet)) {
+              score++;
+            }
+          }
+        } else {
+          // Câu hỏi 1 đáp án
+          if (studentAnswer.toString() == correctAnswer.toString()) {
+            score++;
+          }
         }
       }
 
@@ -924,9 +939,47 @@ class _QuizTakingPageState extends State<QuizTakingPage>
     return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
-  void _selectAnswer(String questionId, String answer) {
+  void _selectAnswer(String questionId, String answer, bool isMultiple) {
     setState(() {
-      _answers[questionId] = answer;
+      if (isMultiple) {
+        // --- LOGIC CHECKBOX (Nhiều đáp án) ---
+        List<String> currentAnswers = [];
+
+        // Lấy danh sách hiện tại (nếu có)
+        if (_answers[questionId] is List) {
+          currentAnswers = List<String>.from(_answers[questionId]);
+        } else if (_answers[questionId] != null) {
+          // Phòng trường hợp lỗi data cũ
+          currentAnswers = [_answers[questionId].toString()];
+        }
+
+        // Nếu đã chọn rồi -> Bỏ chọn (Uncheck)
+        if (currentAnswers.contains(answer)) {
+          currentAnswers.remove(answer);
+        } else {
+          // Chưa chọn -> Chọn (Check)
+          currentAnswers.add(answer);
+        }
+
+        // Sắp xếp A, B, C cho đẹp
+        currentAnswers.sort();
+        _answers[questionId] = currentAnswers;
+      } else {
+        // --- LOGIC RADIO (1 đáp án) ---
+        _answers[questionId] = answer;
+        // ✨ THÊM ĐOẠN NÀY: Tự động nhảy sang câu kế tiếp
+        if (_currentIndex < _questions.length - 1) {
+          Future.delayed(const Duration(milliseconds: 250), () {
+            _pageController.nextPage(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          });
+          setState(() {
+            _currentIndex++;
+          });
+        }
+      }
     });
   }
 
@@ -1078,7 +1131,85 @@ class _QuizTakingPageState extends State<QuizTakingPage>
                         ),
 
                       const Spacer(),
+                      if (!_isLoading)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                              top: BorderSide(color: Colors.grey.shade200),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TextButton.icon(
+                                onPressed: _currentIndex > 0
+                                    ? () {
+                                        setState(() => _currentIndex--);
+                                        _pageController.previousPage(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          curve: Curves.easeInOut,
+                                        );
+                                      }
+                                    : null,
+                                icon: const Icon(Icons.arrow_back_rounded),
+                                label: const Text('Câu trước'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.grey.shade700,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
 
+                              ElevatedButton.icon(
+                                onPressed: _currentIndex < _questions.length - 1
+                                    ? () {
+                                        setState(() => _currentIndex++);
+                                        _pageController.nextPage(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          curve: Curves.easeInOut,
+                                        );
+                                      }
+                                    : _confirmSubmit,
+                                icon: Icon(
+                                  _currentIndex < _questions.length - 1
+                                      ? Icons.arrow_forward_rounded
+                                      : Icons.check_circle_outline,
+                                ),
+                                label: Text(
+                                  _currentIndex < _questions.length - 1
+                                      ? 'Câu sau'
+                                      : 'Hoàn thành',
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      _currentIndex < _questions.length - 1
+                                      ? Colors.blue.shade50
+                                      : Colors.green.shade600,
+                                  foregroundColor:
+                                      _currentIndex < _questions.length - 1
+                                      ? Colors.blue.shade700
+                                      : Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       Builder(
                         builder: (context) => InkWell(
                           onTap: () => Scaffold.of(context).openEndDrawer(),
@@ -1147,82 +1278,6 @@ class _QuizTakingPageState extends State<QuizTakingPage>
                           },
                         ),
                 ),
-
-                if (!_isLoading)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.shade200),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton.icon(
-                          onPressed: _currentIndex > 0
-                              ? () {
-                                  setState(() => _currentIndex--);
-                                  _pageController.previousPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                }
-                              : null,
-                          icon: const Icon(Icons.arrow_back_rounded),
-                          label: const Text('Câu trước'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.grey.shade700,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                          ),
-                        ),
-
-                        ElevatedButton.icon(
-                          onPressed: _currentIndex < _questions.length - 1
-                              ? () {
-                                  setState(() => _currentIndex++);
-                                  _pageController.nextPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                }
-                              : _confirmSubmit,
-                          icon: Icon(
-                            _currentIndex < _questions.length - 1
-                                ? Icons.arrow_forward_rounded
-                                : Icons.check_circle_outline,
-                          ),
-                          label: Text(
-                            _currentIndex < _questions.length - 1
-                                ? 'Câu sau'
-                                : 'Hoàn thành',
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                _currentIndex < _questions.length - 1
-                                ? Colors.blue.shade50
-                                : Colors.green.shade600,
-                            foregroundColor:
-                                _currentIndex < _questions.length - 1
-                                ? Colors.blue.shade700
-                                : Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           ),
@@ -1300,12 +1355,28 @@ class _QuizTakingPageState extends State<QuizTakingPage>
 
           const SizedBox(height: 24),
 
-          ...List.generate(4, (i) {
-            final letter = String.fromCharCode(65 + i);
-            final isSelected = _answers[questionId] == letter;
+          ...List.generate(options.length, (i) {
+            final letter = String.fromCharCode(65 + i); // A, B, C...
+
+            // 1. Xác định loại câu hỏi (Check hay Radio)
+            final rawCorrect = data['correctAnswer'];
+            // Nếu đáp án đúng là List -> Là câu hỏi nhiều lựa chọn
+            final isMultiple = rawCorrect is List;
+
+            // 2. Kiểm tra xem đáp án này có đang được chọn không
+            bool isSelected = false;
+            if (isMultiple) {
+              // Logic check cho List
+              if (_answers[questionId] is List) {
+                isSelected = (_answers[questionId] as List).contains(letter);
+              }
+            } else {
+              // Logic check cho String đơn
+              isSelected = _answers[questionId] == letter;
+            }
 
             return GestureDetector(
-              onTap: () => _selectAnswer(questionId, letter),
+              onTap: () => _selectAnswer(questionId, letter, isMultiple),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
@@ -1318,62 +1389,54 @@ class _QuizTakingPageState extends State<QuizTakingPage>
                         : Colors.grey.shade200,
                     width: isSelected ? 2 : 1,
                   ),
-                  boxShadow: [
-                    if (!isSelected)
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                  ],
                 ),
                 child: Row(
                   children: [
+                    // --- PHẦN Ô CHECKBOX / RADIO ---
                     Container(
-                      width: 32,
-                      height: 32,
+                      width: 28,
+                      height: 28,
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.blue.shade600
-                            : Colors.grey.shade100,
-                        shape: BoxShape.circle,
+                        color: isSelected ? Colors.blue.shade600 : Colors.white,
+                        // ✨ NẾU LÀ MULTIPLE -> HÌNH VUÔNG (BoxShape.rectangle)
+                        // ✨ NẾU LÀ SINGLE   -> HÌNH TRÒN (BoxShape.circle)
+                        shape: isMultiple
+                            ? BoxShape.rectangle
+                            : BoxShape.circle,
+                        borderRadius: isMultiple
+                            ? BorderRadius.circular(6)
+                            : null,
                         border: isSelected
                             ? null
-                            : Border.all(color: Colors.grey.shade300),
+                            : Border.all(color: Colors.grey.shade400, width: 2),
                       ),
-                      child: Center(
-                        child: Text(
-                          letter,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.grey.shade600,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
+                      child: isSelected
+                          ? const Icon(
+                              Icons.check, // Luôn hiện dấu tích khi chọn
+                              size: 18,
+                              color: Colors.white,
+                            )
+                          : null,
                     ),
+
+                    // -----------------------------
                     const SizedBox(width: 16),
+
+                    // Nội dung đáp án
                     Expanded(
                       child: Text(
-                        options.length > i ? options[i] : '',
+                        '${options[i]}', // Hiển thị nội dung
                         style: TextStyle(
                           fontSize: 16,
                           color: isSelected
                               ? Colors.blue.shade900
                               : Colors.black87,
                           fontWeight: isSelected
-                              ? FontWeight.w500
+                              ? FontWeight.w600
                               : FontWeight.normal,
                         ),
                       ),
                     ),
-                    if (isSelected)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: Colors.blue.shade600,
-                      ),
                   ],
                 ),
               ),
@@ -1609,40 +1672,30 @@ class _QuizTakingPageState extends State<QuizTakingPage>
     setState(() => _isSubmitting = true);
 
     try {
-      int score = 0;
-
-      for (var doc in _questions) {
-        final data = doc.data() as Map<String, dynamic>;
-        final qId = doc.id;
-        final correctAnswer = data['correctAnswer'];
-        final studentAnswer = _answers[qId];
-
-        if (studentAnswer == correctAnswer) {
-          score++;
-        }
-      }
-
+      // 1. Gọi hàm tính điểm mới
+      double score = _calculateTotalScore();
       await FirebaseFirestore.instance.collection('submissions').add({
         'studentId': widget.studentId,
         'quizId': widget.quizId,
         'classId': widget.classId,
         'quizTitle': widget.quizTitle,
         'answers': _answers,
-        'score': score,
+        'score': score, // Lưu số thực (Ví dụ: 8.5)
         'totalQuestions': _questions.length,
         'timestamp': FieldValue.serverTimestamp(),
         'timeSpent': (widget.duration * 60) - _secondsRemaining,
-        'cheatingDetected': false,
+        'cheatingDetected': false, // Hoặc biến check gian lận của bạn
         'suspiciousActionCount': _suspiciousActionCount,
-        'autoSubmitted': false,
+        'autoSubmitted': false, // Hoặc biến check auto
       });
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            // Hiển thị điểm số làm tròn 1-2 chữ số thập phân
             content: Text(
-              'Nộp bài thành công! Điểm số: $score/${_questions.length}',
+              'Nộp bài thành công! Điểm số: ${score.toStringAsFixed(2)}/${_questions.length}',
             ),
             backgroundColor: Colors.green,
           ),
@@ -1656,5 +1709,75 @@ class _QuizTakingPageState extends State<QuizTakingPage>
         ).showSnackBar(SnackBar(content: Text('Lỗi nộp bài: $e')));
       }
     }
+  }
+
+  /// Hàm tính điểm chi tiết theo logic mới
+  double _calculateTotalScore() {
+    double totalScore = 0.0;
+
+    for (var doc in _questions) {
+      final data = doc.data() as Map<String, dynamic>;
+      final qId = doc.id;
+      final rawCorrect = data['correctAnswer'];
+      final rawStudent = _answers[qId];
+
+      // Nếu học sinh chưa làm câu này -> 0 điểm
+      if (rawStudent == null) continue;
+
+      double questionScore = 0.0;
+
+      // --- TRƯỜNG HỢP 1: CÂU HỎI NHIỀU ĐÁP ÁN (Checkbox) ---
+      if (rawCorrect is List) {
+        // Chuyển đổi sang List<String> để dễ xử lý
+        List<String> correctList = List<String>.from(
+          rawCorrect.map((e) => e.toString()),
+        );
+        List<String> studentList = [];
+
+        if (rawStudent is List) {
+          studentList = List<String>.from(rawStudent.map((e) => e.toString()));
+        } else {
+          studentList = [rawStudent.toString()];
+        }
+
+        if (correctList.isNotEmpty) {
+          // 1. Tính điểm đơn vị cho mỗi đáp án đúng
+          // Ví dụ: Có 2 đáp án đúng => Mỗi ý 0.5đ
+          double unitScore = 1.0 / correctList.length;
+
+          // 2. Tính điểm trừ cho mỗi đáp án sai (Gấp đôi điểm đơn vị)
+          // Ví dụ: Mỗi ý đúng 0.5đ => Sai bị trừ 1.0đ
+          double penaltyScore = 2.0 * unitScore;
+
+          // 3. Duyệt qua các đáp án học sinh chọn
+          for (var ans in studentList) {
+            if (correctList.contains(ans)) {
+              // Chọn ĐÚNG -> Cộng điểm
+              questionScore += unitScore;
+            } else {
+              // Chọn SAI -> Trừ điểm
+              questionScore -= penaltyScore;
+            }
+          }
+        }
+
+        // 4. Kiểm tra điểm sàn (Không được âm)
+        // "trừ tối đa số điểm của câu đó" => Tức là thấp nhất là 0
+        if (questionScore < 0) questionScore = 0.0;
+
+        // Làm tròn 2 chữ số thập phân cho đẹp (nếu cần)
+        // questionScore = double.parse(questionScore.toStringAsFixed(2));
+      }
+      // --- TRƯỜNG HỢP 2: CÂU HỎI 1 ĐÁP ÁN (Radio) ---
+      else {
+        if (rawStudent.toString() == rawCorrect.toString()) {
+          questionScore = 1.0;
+        }
+      }
+
+      totalScore += questionScore;
+    }
+
+    return totalScore;
   }
 }

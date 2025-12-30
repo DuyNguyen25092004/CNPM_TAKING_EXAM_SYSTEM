@@ -448,17 +448,54 @@ class _ClassQuizDetailPageState extends State<ClassQuizDetailPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 16),
+                                    // Tìm đoạn code map options và thay bằng:
                                     ...options.asMap().entries.map((optEntry) {
                                       final letter = String.fromCharCode(
                                         65 + optEntry.key,
                                       );
-                                      final isCorrect = letter == correctAnswer;
 
+                                      // // ✨ Kiểm tra type
+                                      // final questionType =
+                                      //     questionData['type'] ?? 'single';
+                                      // bool isCorrect;
+
+                                      // if (questionType == 'multiple') {
+                                      //   final correctAnswers =
+                                      //       questionData['correctAnswer']
+                                      //           is List
+                                      //       ? List<String>.from(
+                                      //           questionData['correctAnswer'],
+                                      //         )
+                                      //       : [
+                                      //           questionData['correctAnswer']
+                                      //               .toString(),
+                                      //         ];
+                                      //   isCorrect = correctAnswers.contains(
+                                      //     letter,
+                                      //   );
+                                      // } else {
+                                      //   isCorrect =
+                                      //       letter ==
+                                      //       questionData['correctAnswer'];
+                                      // }
+                                      // --- CẬP NHẬT LOGIC CHECK ---
+                                      bool isCorrect = false;
+                                      final rawCorrect =
+                                          questionData['correctAnswer'];
+
+                                      if (rawCorrect is List) {
+                                        isCorrect = rawCorrect
+                                            .map((e) => e.toString())
+                                            .contains(letter);
+                                      } else {
+                                        isCorrect =
+                                            rawCorrect.toString() == letter;
+                                      }
                                       return Container(
                                         margin: const EdgeInsets.only(
                                           bottom: 12,
                                         ),
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
                                           color: isCorrect
                                               ? Colors.green.shade50
@@ -476,8 +513,8 @@ class _ClassQuizDetailPageState extends State<ClassQuizDetailPage> {
                                         child: Row(
                                           children: [
                                             Container(
-                                              width: 32,
-                                              height: 32,
+                                              width: 28,
+                                              height: 28,
                                               decoration: BoxDecoration(
                                                 color: isCorrect
                                                     ? Colors.green
@@ -490,28 +527,18 @@ class _ClassQuizDetailPageState extends State<ClassQuizDetailPage> {
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.bold,
-                                                    fontSize: 16,
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 16),
+                                            const SizedBox(width: 12),
                                             Expanded(
-                                              child: Text(
-                                                optEntry.value,
-                                                style: TextStyle(
-                                                  fontSize: 15,
-                                                  color: isCorrect
-                                                      ? Colors.green.shade900
-                                                      : Colors.black87,
-                                                ),
-                                              ),
+                                              child: Text(optEntry.value),
                                             ),
                                             if (isCorrect)
-                                              Icon(
+                                              const Icon(
                                                 Icons.check_circle_rounded,
-                                                color: Colors.green.shade700,
-                                                size: 24,
+                                                color: Colors.green,
                                               ),
                                           ],
                                         ),

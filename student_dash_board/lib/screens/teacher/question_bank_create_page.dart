@@ -1,33 +1,26 @@
-// lib/screens/teacher/class_create_quiz_page.dart
+// lib/screens/teacher/question_bank_create_page.dart (FILE MỚI)
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:unorm_dart/unorm_dart.dart' as unorm;
 
-class ClassCreateQuizPage extends StatefulWidget {
-  final String classId;
-
-  const ClassCreateQuizPage({Key? key, required this.classId})
-    : super(key: key);
+class QuestionBankCreatePage extends StatefulWidget {
+  const QuestionBankCreatePage({Key? key}) : super(key: key);
 
   @override
-  State<ClassCreateQuizPage> createState() => _ClassCreateQuizPageState();
+  State<QuestionBankCreatePage> createState() => _QuestionBankCreatePageState();
 }
 
-class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
+class _QuestionBankCreatePageState extends State<QuestionBankCreatePage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _durationController = TextEditingController(text: '30');
-  final _maxViolationsController = TextEditingController(text: '5'); // ADDED
   bool _isUploading = false;
   double _uploadProgress = 0.0;
 
   @override
   void dispose() {
     _titleController.dispose();
-    _durationController.dispose();
-    _maxViolationsController.dispose(); // ADDED
     super.dispose();
   }
 
@@ -39,7 +32,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.blue.shade50, Colors.white, Colors.cyan.shade50],
+            colors: [Colors.purple.shade50, Colors.white, Colors.pink.shade50],
           ),
         ),
         child: SafeArea(
@@ -69,12 +62,15 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                          colors: [
+                            Colors.purple.shade400,
+                            Colors.purple.shade600,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withOpacity(0.3),
+                            color: Colors.purple.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -92,7 +88,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Tạo đề thi mới',
+                            'Tạo ngân hàng câu hỏi',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -102,7 +98,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Tạo và gán trực tiếp vào lớp',
+                            'Upload file PDF/TXT',
                             style: TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                         ],
@@ -127,7 +123,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.blue.shade200),
+                            border: Border.all(color: Colors.purple.shade200),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
@@ -144,12 +140,12 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue.shade100,
+                                      color: Colors.purple.shade100,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
                                       Icons.info_rounded,
-                                      color: Colors.blue.shade700,
+                                      color: Colors.purple.shade700,
                                       size: 24,
                                     ),
                                   ),
@@ -158,7 +154,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                     'Hướng dẫn định dạng file',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.blue.shade700,
+                                      color: Colors.purple.shade700,
                                       fontSize: 18,
                                     ),
                                   ),
@@ -217,7 +213,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
 
                         const SizedBox(height: 24),
 
-                        // Quiz Info Section
+                        // Bank Name Input
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -239,18 +235,18 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.shade100,
+                                      color: Colors.blue.shade100,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
-                                      Icons.edit_document,
-                                      color: Colors.green.shade700,
+                                      Icons.folder_special_rounded,
+                                      color: Colors.blue.shade700,
                                       size: 24,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   const Text(
-                                    'Thông tin đề thi',
+                                    'Thông tin ngân hàng',
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -260,86 +256,22 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                               ),
                               const SizedBox(height: 20),
 
-                              // Quiz title
+                              // Bank name
                               TextFormField(
                                 controller: _titleController,
                                 decoration: InputDecoration(
-                                  labelText: 'Tên đề thi',
+                                  labelText: 'Tên ngân hàng câu hỏi',
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   prefixIcon: const Icon(Icons.title),
-                                  hintText: 'VD: Kiểm tra Toán học Lớp 10',
+                                  hintText: 'VD: Ngân hàng Toán học Lớp 10',
                                   filled: true,
                                   fillColor: Colors.grey.shade50,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Vui lòng nhập tên đề thi';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Duration
-                              TextFormField(
-                                controller: _durationController,
-                                decoration: InputDecoration(
-                                  labelText: 'Thời gian làm bài (phút)',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  prefixIcon: const Icon(Icons.timer),
-                                  hintText: '30',
-                                  filled: true,
-                                  fillColor: Colors.grey.shade50,
-                                ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Vui lòng nhập thời gian';
-                                  }
-                                  final duration = int.tryParse(value);
-                                  if (duration == null || duration <= 0) {
-                                    return 'Thời gian phải là số dương';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // ADDED: Max Violations
-                              TextFormField(
-                                controller: _maxViolationsController,
-                                decoration: InputDecoration(
-                                  labelText: 'Số lần vi phạm tối đa',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.warning_amber_rounded,
-                                  ),
-                                  hintText: '5',
-                                  helperText:
-                                      'Học sinh sẽ tự động nộp bài sau khi vi phạm đủ số lần',
-                                  filled: true,
-                                  fillColor: Colors.grey.shade50,
-                                ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Vui lòng nhập số lần vi phạm';
-                                  }
-                                  final maxViolations = int.tryParse(value);
-                                  if (maxViolations == null ||
-                                      maxViolations < 1) {
-                                    return 'Số lần vi phạm phải ≥ 1';
-                                  }
-                                  if (maxViolations > 20) {
-                                    return 'Số lần vi phạm không nên > 20';
+                                    return 'Vui lòng nhập tên ngân hàng';
                                   }
                                   return null;
                                 },
@@ -355,7 +287,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                           width: double.infinity,
                           height: 56,
                           child: ElevatedButton.icon(
-                            onPressed: _isUploading ? null : _uploadQuiz,
+                            onPressed: _isUploading ? null : _uploadQuestions,
                             icon: const Icon(Icons.upload_file, size: 28),
                             label: const Text(
                               'Upload File PDF/TXT',
@@ -365,7 +297,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade600,
+                              backgroundColor: Colors.purple.shade600,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -400,7 +332,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                       child: CircularProgressIndicator(
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                              Colors.blue.shade600,
+                                              Colors.purple.shade600,
                                             ),
                                         strokeWidth: 3,
                                       ),
@@ -437,9 +369,9 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                                   child: LinearProgressIndicator(
                                     value: _uploadProgress,
                                     minHeight: 8,
-                                    backgroundColor: Colors.blue.shade100,
+                                    backgroundColor: Colors.purple.shade100,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.blue.shade600,
+                                      Colors.purple.shade600,
                                     ),
                                   ),
                                 ),
@@ -454,21 +386,21 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
+                            color: Colors.blue.shade50,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.orange.shade200),
+                            border: Border.all(color: Colors.blue.shade200),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.lightbulb_rounded,
-                                color: Colors.orange.shade700,
+                                color: Colors.blue.shade700,
                                 size: 28,
                               ),
                               const SizedBox(width: 16),
                               const Expanded(
                                 child: Text(
-                                  'Đề thi sẽ được tạo và tự động gán vào lớp này.',
+                                  'Ngân hàng câu hỏi sẽ được lưu và có thể tạo nhiều đề thi khác nhau từ đây.',
                                   style: TextStyle(fontSize: 15, height: 1.5),
                                 ),
                               ),
@@ -487,7 +419,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
     );
   }
 
-  Future<void> _uploadQuiz() async {
+  Future<void> _uploadQuestions() async {
     if (!_formKey.currentState!.validate()) return;
 
     try {
@@ -520,14 +452,12 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
 
       setState(() => _uploadProgress = 0.5);
 
-      // --- GỌI HÀM PARSE MỚI ---
       final parseResult = _parseQuestions(content);
       final List<Map<String, dynamic>> questions = parseResult['questions'];
       final List<String> errors = parseResult['errors'];
 
       setState(() => _uploadProgress = 0.7);
 
-      // --- NẾU CÓ LỖI: HIỆN THÔNG BÁO VÀ DỪNG ---
       if (errors.isNotEmpty) {
         setState(() {
           _isUploading = false;
@@ -594,56 +524,26 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
             ),
           );
         }
-        return; // Dừng upload
+        return;
       }
 
-      // --- NẾU KHÔNG CÓ CÂU HỎI NÀO ---
       if (questions.isEmpty) {
         throw Exception('Không tìm thấy câu hỏi nào hợp lệ.');
       }
 
-      // --- TIẾP TỤC UPLOAD NHƯ CŨ ---
-      // (Phần code bên dưới giữ nguyên logic cũ của bạn, chỉ thay đổi biến questions)
-
-      // ... Logic tạo Quiz trên Firebase ...
-      // --- TẠO QUIZ VÀ GÁN VÀO LỚP ---
-      final quizRef = await FirebaseFirestore.instance.collection('quiz').add({
-        'title': _titleController.text.trim(),
-        'questionCount': questions.length,
-        'duration': int.parse(_durationController.text),
-        'maxSuspiciousActions': int.parse(_maxViolationsController.text),
-        'status': 'available',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      for (var question in questions) {
-        await quizRef.collection('questions').add(question);
-      }
-
-      // ✨ GÁN VÀO LỚP HỌC
-      await FirebaseFirestore.instance
-          .collection('classes')
-          .doc(widget.classId)
-          .collection('quizzes')
-          .doc(quizRef.id)
-          .set({
+      // ✨ LƯU VÀO QUIZ_BANKS COLLECTION
+      final bankRef = await FirebaseFirestore.instance
+          .collection('quiz_banks')
+          .add({
             'title': _titleController.text.trim(),
+            'description': 'Ngân hàng câu hỏi',
             'questionCount': questions.length,
-            'duration': int.parse(_durationController.text),
-            'assignedAt': FieldValue.serverTimestamp(),
+            'createdAt': FieldValue.serverTimestamp(),
           });
 
-      // ✨ CẬP NHẬT SỐ LƯỢNG ĐỀ THI TRONG LỚP
-      final classDoc = await FirebaseFirestore.instance
-          .collection('classes')
-          .doc(widget.classId)
-          .get();
-      final currentCount = (classDoc.data()?['quizCount'] ?? 0) as int;
-
-      await FirebaseFirestore.instance
-          .collection('classes')
-          .doc(widget.classId)
-          .update({'quizCount': currentCount + 1});
+      for (var question in questions) {
+        await bankRef.collection('questions').add(question);
+      }
 
       setState(() => _uploadProgress = 1.0);
 
@@ -654,7 +554,7 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Thành công! Đã thêm ${questions.length} câu hỏi.'),
+                Text('✅ Đã thêm ${questions.length} câu hỏi vào ngân hàng!'),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -688,7 +588,6 @@ class _ClassCreateQuizPageState extends State<ClassCreateQuizPage> {
       throw Exception('Lỗi khi đọc PDF: $e');
     }
   }
-
   // --- BẮT ĐẦU PHẦN CODE MỚI ---
 
   /// Hàm chuẩn hóa nội dung file trước khi xử lý

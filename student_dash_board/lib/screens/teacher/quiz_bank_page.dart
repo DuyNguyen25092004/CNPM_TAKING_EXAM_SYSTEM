@@ -29,11 +29,7 @@ class _QuizBankPageState extends State<QuizBankPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.purple.shade50,
-            Colors.white,
-            Colors.pink.shade50,
-          ],
+          colors: [Colors.purple.shade50, Colors.white, Colors.pink.shade50],
         ),
       ),
       child: Column(
@@ -60,7 +56,10 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.purple.shade400, Colors.purple.shade600],
+                          colors: [
+                            Colors.purple.shade400,
+                            Colors.purple.shade600,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
@@ -94,10 +93,7 @@ class _QuizBankPageState extends State<QuizBankPage> {
                           SizedBox(height: 4),
                           Text(
                             'Quản lý tất cả đề thi của bạn',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -120,7 +116,10 @@ class _QuizBankPageState extends State<QuizBankPage> {
                     icon: const Icon(Icons.add_rounded, size: 24),
                     label: const Text(
                       'Tạo đề thi mới',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple.shade600,
@@ -141,9 +140,7 @@ class _QuizBankPageState extends State<QuizBankPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
-              ),
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Column(
               children: [
@@ -162,18 +159,21 @@ class _QuizBankPageState extends State<QuizBankPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.purple.shade400, width: 2),
+                      borderSide: BorderSide(
+                        color: Colors.purple.shade400,
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey.shade50,
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
                         : null,
                   ),
                   onChanged: (value) {
@@ -198,9 +198,17 @@ class _QuizBankPageState extends State<QuizBankPage> {
                           children: [
                             _buildFilterChip('Tất cả', 'all', Colors.blue),
                             const SizedBox(width: 8),
-                            _buildFilterChip('Đang mở', 'available', Colors.green),
+                            _buildFilterChip(
+                              'Đang mở',
+                              'available',
+                              Colors.green,
+                            ),
                             const SizedBox(width: 8),
-                            _buildFilterChip('Đã đóng', 'archived', Colors.grey),
+                            _buildFilterChip(
+                              'Đã đóng',
+                              'archived',
+                              Colors.grey,
+                            ),
                           ],
                         ),
                       ),
@@ -222,7 +230,9 @@ class _QuizBankPageState extends State<QuizBankPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.purple.shade600),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.purple.shade600,
+                      ),
                     ),
                   );
                 }
@@ -240,7 +250,11 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.error_outline, size: 60, color: Colors.red.shade700),
+                          Icon(
+                            Icons.error_outline,
+                            size: 60,
+                            color: Colors.red.shade700,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'Có lỗi xảy ra',
@@ -306,7 +320,9 @@ class _QuizBankPageState extends State<QuizBankPage> {
                 if (_searchQuery.isNotEmpty) {
                   quizzes = quizzes.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    final title = (data['title'] ?? '').toString().toLowerCase();
+                    final title = (data['title'] ?? '')
+                        .toString()
+                        .toLowerCase();
                     return title.contains(_searchQuery);
                   }).toList();
                 }
@@ -323,11 +339,18 @@ class _QuizBankPageState extends State<QuizBankPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 100, color: Colors.grey[400]),
+                        Icon(
+                          Icons.search_off,
+                          size: 100,
+                          color: Colors.grey[400],
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Không tìm thấy đề thi',
-                          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
                         ),
                       ],
                     ),
@@ -411,7 +434,8 @@ class _QuizBankPageState extends State<QuizBankPage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: (isAvailable ? Colors.green : Colors.grey).withOpacity(0.3),
+                        color: (isAvailable ? Colors.green : Colors.grey)
+                            .withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -431,10 +455,7 @@ class _QuizBankPageState extends State<QuizBankPage> {
                         ),
                         const Text(
                           'câu',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontSize: 11, color: Colors.white),
                         ),
                       ],
                     ),
@@ -456,7 +477,11 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.timer_outlined, size: 16, color: Colors.grey[600]),
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${data['duration'] ?? 0} phút',
@@ -464,7 +489,10 @@ class _QuizBankPageState extends State<QuizBankPage> {
                           ),
                           const SizedBox(width: 16),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: isAvailable
                                   ? Colors.green.withOpacity(0.1)
@@ -480,13 +508,17 @@ class _QuizBankPageState extends State<QuizBankPage> {
                                 Icon(
                                   isAvailable ? Icons.lock_open : Icons.lock,
                                   size: 14,
-                                  color: isAvailable ? Colors.green : Colors.grey,
+                                  color: isAvailable
+                                      ? Colors.green
+                                      : Colors.grey,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   isAvailable ? 'Đang mở' : 'Đã đóng',
                                   style: TextStyle(
-                                    color: isAvailable ? Colors.green : Colors.grey,
+                                    color: isAvailable
+                                        ? Colors.green
+                                        : Colors.grey,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -509,7 +541,11 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       value: 'view',
                       child: Row(
                         children: [
-                          Icon(Icons.visibility_rounded, size: 20, color: Colors.blue),
+                          Icon(
+                            Icons.visibility_rounded,
+                            size: 20,
+                            color: Colors.blue,
+                          ),
                           SizedBox(width: 12),
                           Text('Xem chi tiết'),
                         ],
@@ -519,7 +555,11 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit_rounded, size: 20, color: Colors.orange),
+                          Icon(
+                            Icons.edit_rounded,
+                            size: 20,
+                            color: Colors.orange,
+                          ),
                           SizedBox(width: 12),
                           Text('Chỉnh sửa'),
                         ],
@@ -530,7 +570,9 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       child: Row(
                         children: [
                           Icon(
-                            isAvailable ? Icons.lock_rounded : Icons.lock_open_rounded,
+                            isAvailable
+                                ? Icons.lock_rounded
+                                : Icons.lock_open_rounded,
                             size: 20,
                             color: Colors.purple,
                           ),
@@ -543,7 +585,11 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_rounded, size: 20, color: Colors.red),
+                          Icon(
+                            Icons.delete_rounded,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 12),
                           Text('Xóa', style: TextStyle(color: Colors.red)),
                         ],
@@ -575,7 +621,10 @@ class _QuizBankPageState extends State<QuizBankPage> {
     );
   }
 
-  Future<void> _viewQuizDetails(String quizId, Map<String, dynamic> quizData) async {
+  Future<void> _viewQuizDetails(
+    String quizId,
+    Map<String, dynamic> quizData,
+  ) async {
     final questionsSnapshot = await FirebaseFirestore.instance
         .collection('quiz')
         .doc(quizId)
@@ -595,10 +644,7 @@ class _QuizBankPageState extends State<QuizBankPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.purple.shade50,
-                Colors.white,
-              ],
+              colors: [Colors.purple.shade50, Colors.white],
             ),
             borderRadius: BorderRadius.circular(24),
           ),
@@ -627,11 +673,18 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.purple.shade400, Colors.purple.shade600],
+                          colors: [
+                            Colors.purple.shade400,
+                            Colors.purple.shade600,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.quiz_rounded, color: Colors.white, size: 28),
+                      child: const Icon(
+                        Icons.quiz_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -649,14 +702,22 @@ class _QuizBankPageState extends State<QuizBankPage> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.quiz, size: 16, color: Colors.grey[600]),
+                              Icon(
+                                Icons.quiz,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '${quizData['questionCount']} câu hỏi',
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
                               const SizedBox(width: 12),
-                              Icon(Icons.timer, size: 16, color: Colors.grey[600]),
+                              Icon(
+                                Icons.timer,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '${quizData['duration']} phút',
@@ -680,7 +741,9 @@ class _QuizBankPageState extends State<QuizBankPage> {
                   itemCount: questionsSnapshot.docs.length,
                   itemBuilder: (context, index) {
                     final question = questionsSnapshot.docs[index].data();
-                    final options = List<String>.from(question['options'] ?? []);
+                    final options = List<String>.from(
+                      question['options'] ?? [],
+                    );
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
@@ -697,10 +760,16 @@ class _QuizBankPageState extends State<QuizBankPage> {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
-                                      colors: [Colors.purple.shade400, Colors.purple.shade600],
+                                      colors: [
+                                        Colors.purple.shade400,
+                                        Colors.purple.shade600,
+                                      ],
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -724,8 +793,22 @@ class _QuizBankPageState extends State<QuizBankPage> {
                             ),
                             const SizedBox(height: 12),
                             ...options.asMap().entries.map((entry) {
-                              final letter = String.fromCharCode(65 + entry.key);
-                              final isCorrect = letter == question['correctAnswer'];
+                              final letter = String.fromCharCode(
+                                65 + entry.key,
+                              );
+                              // Logic MỚI: Hỗ trợ cả String và List
+                              bool isCorrect = false;
+                              final rawCorrect = question['correctAnswer'];
+                              if (rawCorrect is List) {
+                                // Nếu là danh sách (VD: ['A', 'B'])
+                                isCorrect = rawCorrect
+                                    .map((e) => e.toString())
+                                    .contains(letter);
+                              } else {
+                                // Nếu là đơn (VD: 'A')
+                                isCorrect = rawCorrect.toString() == letter;
+                              }
+                              // ---------------------------------------
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
@@ -735,7 +818,9 @@ class _QuizBankPageState extends State<QuizBankPage> {
                                       ? Colors.green.shade50
                                       : Colors.grey.shade50,
                                   border: Border.all(
-                                    color: isCorrect ? Colors.green : Colors.grey.shade300,
+                                    color: isCorrect
+                                        ? Colors.green
+                                        : Colors.grey.shade300,
                                     width: isCorrect ? 2 : 1,
                                   ),
                                   borderRadius: BorderRadius.circular(12),
@@ -746,7 +831,9 @@ class _QuizBankPageState extends State<QuizBankPage> {
                                       width: 28,
                                       height: 28,
                                       decoration: BoxDecoration(
-                                        color: isCorrect ? Colors.green : Colors.grey.shade400,
+                                        color: isCorrect
+                                            ? Colors.green
+                                            : Colors.grey.shade400,
                                         shape: BoxShape.circle,
                                       ),
                                       child: Center(
@@ -762,7 +849,10 @@ class _QuizBankPageState extends State<QuizBankPage> {
                                     const SizedBox(width: 12),
                                     Expanded(child: Text(entry.value)),
                                     if (isCorrect)
-                                      const Icon(Icons.check_circle_rounded, color: Colors.green),
+                                      const Icon(
+                                        Icons.check_circle_rounded,
+                                        color: Colors.green,
+                                      ),
                                   ],
                                 ),
                               );
@@ -809,7 +899,10 @@ class _QuizBankPageState extends State<QuizBankPage> {
     }
   }
 
-  Future<void> _toggleQuizStatus(String quizId, Map<String, dynamic> quizData) async {
+  Future<void> _toggleQuizStatus(
+    String quizId,
+    Map<String, dynamic> quizData,
+  ) async {
     final currentStatus = quizData['status'] ?? 'available';
     final newStatus = currentStatus == 'available' ? 'archived' : 'available';
 
@@ -828,7 +921,9 @@ class _QuizBankPageState extends State<QuizBankPage> {
                   color: Colors.white,
                 ),
                 const SizedBox(width: 12),
-                Text(newStatus == 'available' ? 'Đã mở đề thi' : 'Đã đóng đề thi'),
+                Text(
+                  newStatus == 'available' ? 'Đã mở đề thi' : 'Đã đóng đề thi',
+                ),
               ],
             ),
             backgroundColor: Colors.green.shade600,
@@ -872,10 +967,7 @@ class _QuizBankPageState extends State<QuizBankPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.red.shade50,
-                Colors.white,
-              ],
+              colors: [Colors.red.shade50, Colors.white],
             ),
             borderRadius: BorderRadius.circular(24),
           ),
@@ -933,8 +1025,8 @@ class _QuizBankPageState extends State<QuizBankPage> {
                     const SizedBox(height: 8),
                     Text(
                       '• Xóa đề thi\n'
-                          '• Xóa tất cả câu hỏi\n'
-                          '• Không thể hoàn tác!',
+                      '• Xóa tất cả câu hỏi\n'
+                      '• Không thể hoàn tác!',
                       style: TextStyle(
                         color: Colors.orange.shade800,
                         height: 1.6,
@@ -951,7 +1043,10 @@ class _QuizBankPageState extends State<QuizBankPage> {
                       onPressed: () => Navigator.pop(context, false),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                        side: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

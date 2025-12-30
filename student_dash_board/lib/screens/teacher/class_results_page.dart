@@ -1292,86 +1292,210 @@ class _SubmissionDetailDialog extends StatelessWidget {
                           ),
                         ),
 
+                        // Padding(
+                        //   padding: const EdgeInsets.all(16),
+                        //   child: Column(
+                        //     children: List.generate(4, (i) {
+                        //       final letter = String.fromCharCode(65 + i);
+                        //       final options = questionData['options'] as List;
+                        //       final isCorrectOption = letter == correctAnswer;
+                        //       final isStudentChoice = letter == studentAnswer;
+
+                        //       Color bgColor = Colors.white;
+                        //       Color borderColor = Colors.grey.shade200;
+                        //       Color textColor = Colors.black87;
+                        //       IconData? icon;
+
+                        //       if (isCorrectOption) {
+                        //         bgColor = Colors.green.shade50;
+                        //         borderColor = Colors.green.shade400;
+                        //         textColor = Colors.green.shade800;
+                        //         icon = Icons.check_circle_rounded;
+                        //       } else if (isStudentChoice && !isCorrect) {
+                        //         bgColor = Colors.red.shade50;
+                        //         borderColor = Colors.red.shade400;
+                        //         textColor = Colors.red.shade800;
+                        //         icon = Icons.cancel_rounded;
+                        //       } else if (isStudentChoice) {
+                        //         bgColor = Colors.green.shade50;
+                        //         borderColor = Colors.green.shade400;
+                        //       }
+
+                        //       return Container(
+                        //         margin: const EdgeInsets.only(bottom: 8),
+                        //         padding: const EdgeInsets.all(12),
+                        //         decoration: BoxDecoration(
+                        //           color: bgColor,
+                        //           borderRadius: BorderRadius.circular(10),
+                        //           border: Border.all(color: borderColor),
+                        //         ),
+                        //         child: Row(
+                        //           children: [
+                        //             Container(
+                        //               width: 28,
+                        //               height: 28,
+                        //               decoration: BoxDecoration(
+                        //                 color: isCorrectOption
+                        //                     ? Colors.green
+                        //                     : (isStudentChoice
+                        //                           ? Colors.red
+                        //                           : Colors.grey.shade300),
+                        //                 shape: BoxShape.circle,
+                        //               ),
+                        //               child: Center(
+                        //                 child: Text(
+                        //                   letter,
+                        //                   style: TextStyle(
+                        //                     color:
+                        //                         isStudentChoice ||
+                        //                             isCorrectOption
+                        //                         ? Colors.white
+                        //                         : Colors.grey.shade700,
+                        //                     fontWeight: FontWeight.bold,
+                        //                   ),
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //             const SizedBox(width: 12),
+                        //             Expanded(
+                        //               child: Text(
+                        //                 options[i],
+                        //                 style: TextStyle(
+                        //                   color: textColor,
+                        //                   fontWeight: FontWeight.w500,
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //             if (icon != null)
+                        //               Icon(icon, color: borderColor, size: 20),
+                        //           ],
+                        //         ),
+                        //       );
+                        //     }),
+                        //   ),
+                        // ),
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
-                            children: List.generate(4, (i) {
-                              final letter = String.fromCharCode(65 + i);
+                            children: () {
+                              // ✨ Lấy options và kiểm tra type
                               final options = questionData['options'] as List;
-                              final isCorrectOption = letter == correctAnswer;
-                              final isStudentChoice = letter == studentAnswer;
+                              final questionType =
+                                  questionData['type'] ?? 'single';
 
-                              Color bgColor = Colors.white;
-                              Color borderColor = Colors.grey.shade200;
-                              Color textColor = Colors.black87;
-                              IconData? icon;
+                              return List.generate(options.length, (i) {
+                                final letter = String.fromCharCode(65 + i);
 
-                              if (isCorrectOption) {
-                                bgColor = Colors.green.shade50;
-                                borderColor = Colors.green.shade400;
-                                textColor = Colors.green.shade800;
-                                icon = Icons.check_circle_rounded;
-                              } else if (isStudentChoice && !isCorrect) {
-                                bgColor = Colors.red.shade50;
-                                borderColor = Colors.red.shade400;
-                                textColor = Colors.red.shade800;
-                                icon = Icons.cancel_rounded;
-                              } else if (isStudentChoice) {
-                                bgColor = Colors.green.shade50;
-                                borderColor = Colors.green.shade400;
-                              }
+                                // ✨ Xử lý multiple choice
+                                bool isCorrectOption;
+                                bool isStudentChoice;
 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: bgColor,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: borderColor),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: isCorrectOption
-                                            ? Colors.green
-                                            : (isStudentChoice
-                                                  ? Colors.red
-                                                  : Colors.grey.shade300),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          letter,
-                                          style: TextStyle(
-                                            color:
-                                                isStudentChoice ||
-                                                    isCorrectOption
-                                                ? Colors.white
-                                                : Colors.grey.shade700,
-                                            fontWeight: FontWeight.bold,
+                                if (questionType == 'multiple') {
+                                  // Multiple choice
+                                  final correctAnswers = correctAnswer is List
+                                      ? List<String>.from(correctAnswer)
+                                      : [correctAnswer.toString()];
+
+                                  final studentAnswers = studentAnswer is List
+                                      ? List<String>.from(studentAnswer)
+                                      : (studentAnswer != null &&
+                                            studentAnswer.toString().isNotEmpty)
+                                      ? [studentAnswer.toString()]
+                                      : <String>[];
+
+                                  isCorrectOption = correctAnswers.contains(
+                                    letter,
+                                  );
+                                  isStudentChoice = studentAnswers.contains(
+                                    letter,
+                                  );
+                                } else {
+                                  // Single choice
+                                  isCorrectOption = letter == correctAnswer;
+                                  isStudentChoice = letter == studentAnswer;
+                                }
+
+                                Color bgColor = Colors.white;
+                                Color borderColor = Colors.grey.shade200;
+                                Color textColor = Colors.black87;
+                                IconData? icon;
+
+                                if (isCorrectOption && isStudentChoice) {
+                                  // Đúng và chọn
+                                  bgColor = Colors.green.shade50;
+                                  borderColor = Colors.green.shade400;
+                                  textColor = Colors.green.shade800;
+                                  icon = Icons.check_circle_rounded;
+                                } else if (isCorrectOption) {
+                                  // Đúng nhưng không chọn
+                                  bgColor = Colors.green.shade50;
+                                  borderColor = Colors.green.shade400;
+                                  textColor = Colors.green.shade800;
+                                  icon = Icons.check_circle_outline;
+                                } else if (isStudentChoice) {
+                                  // Sai và chọn
+                                  bgColor = Colors.red.shade50;
+                                  borderColor = Colors.red.shade400;
+                                  textColor = Colors.red.shade800;
+                                  icon = Icons.cancel_rounded;
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: borderColor),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: isCorrectOption
+                                              ? Colors.green
+                                              : (isStudentChoice
+                                                    ? Colors.red
+                                                    : Colors.grey.shade300),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            letter,
+                                            style: TextStyle(
+                                              color:
+                                                  isStudentChoice ||
+                                                      isCorrectOption
+                                                  ? Colors.white
+                                                  : Colors.grey.shade700,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        options[i],
-                                        style: TextStyle(
-                                          color: textColor,
-                                          fontWeight: FontWeight.w500,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          options[i].toString(),
+                                          style: TextStyle(
+                                            color: textColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    if (icon != null)
-                                      Icon(icon, color: borderColor, size: 20),
-                                  ],
-                                ),
-                              );
-                            }),
+                                      if (icon != null)
+                                        Icon(
+                                          icon,
+                                          color: borderColor,
+                                          size: 20,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              });
+                            }(),
                           ),
                         ),
                       ],

@@ -455,6 +455,7 @@ class _EditQuizPageState extends State<EditQuizPage> {
   }
 
   Widget _buildQuestionCard(int index, Map<String, dynamic> question) {
+    final options = question['options'] as List<String>;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -545,10 +546,27 @@ class _EditQuizPageState extends State<EditQuizPage> {
             const SizedBox(height: 16),
 
             // Options
-            ...List.generate(4, (optionIndex) {
+            // Options
+            // Trong widget _buildQuestionCard
+            // Trong widget _buildQuestionCard
+            ...List.generate(options.length, (optionIndex) {
               final letter = String.fromCharCode(65 + optionIndex);
-              final options = question['options'] as List<String>;
-              final isCorrect = question['correctAnswer'] == letter;
+
+              // Lấy dữ liệu đáp án hiện tại
+              final rawCorrect = question['correctAnswer'];
+
+              // Kiểm tra xem đang là Multiple (List) hay Single (String)
+              bool isMultiple = rawCorrect is List;
+              bool isSelected = false;
+
+              // Logic kiểm tra xem ô này có được chọn không
+              if (isMultiple) {
+                isSelected = (rawCorrect as List)
+                    .map((e) => e.toString())
+                    .contains(letter);
+              } else {
+                isSelected = rawCorrect.toString() == letter;
+              }
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -557,16 +575,51 @@ class _EditQuizPageState extends State<EditQuizPage> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
-                      child: Radio<String>(
-                        value: letter,
-                        groupValue: question['correctAnswer'],
-                        onChanged: (value) {
-                          setState(() {
-                            _questions[index]['correctAnswer'] = value!;
-                          });
-                        },
-                        activeColor: Colors.green,
-                      ),
+                      child: isMultiple
+                          ? Checkbox(
+                              value: isSelected,
+                              activeColor: Colors.green,
+                              onChanged: (val) {
+                                setState(() {
+                                  // --- FIX LỖI CRASH Ở ĐÂY ---
+                                  // Phải xử lý trường hợp rawCorrect đang là String
+                                  List<String> currentAnswers;
+                                  if (rawCorrect is List) {
+                                    currentAnswers = List<String>.from(
+                                      rawCorrect,
+                                    );
+                                  } else {
+                                    // Nếu đang là String (VD: "A"), chuyển thành List ["A"]
+                                    currentAnswers = [rawCorrect.toString()];
+                                  }
+
+                                  if (val == true) {
+                                    if (!currentAnswers.contains(letter)) {
+                                      currentAnswers.add(letter);
+                                    }
+                                    currentAnswers.sort();
+                                  } else {
+                                    currentAnswers.remove(letter);
+                                  }
+
+                                  _questions[index]['correctAnswer'] =
+                                      currentAnswers;
+                                  _questions[index]['type'] = 'multiple';
+                                });
+                              },
+                            )
+                          : Radio<String>(
+                              value: letter,
+                              groupValue: rawCorrect
+                                  .toString(), // Chuyển về string để so sánh an toàn
+                              activeColor: Colors.green,
+                              onChanged: (val) {
+                                setState(() {
+                                  _questions[index]['correctAnswer'] = val!;
+                                  _questions[index]['type'] = 'single';
+                                });
+                              },
+                            ),
                     ),
                     Expanded(
                       child: TextFormField(
@@ -576,14 +629,16 @@ class _EditQuizPageState extends State<EditQuizPage> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: isCorrect
+                              // --- ĐÃ SỬA: Dùng biến isSelected thay vì isCorrect ---
+                              color: isSelected
                                   ? Colors.green
                                   : Colors.grey.shade300,
-                              width: isCorrect ? 2 : 1,
+                              width: isSelected ? 2 : 1,
                             ),
                           ),
                           filled: true,
-                          fillColor: isCorrect
+                          // --- ĐÃ SỬA: Dùng biến isSelected thay vì isCorrect ---
+                          fillColor: isSelected
                               ? Colors.green.withOpacity(0.1)
                               : Colors.grey.shade50,
                           prefixIcon: Container(
@@ -591,7 +646,8 @@ class _EditQuizPageState extends State<EditQuizPage> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: isCorrect
+                              // --- ĐÃ SỬA: Dùng biến isSelected thay vì isCorrect ---
+                              color: isSelected
                                   ? Colors.green
                                   : Colors.grey.shade400,
                               shape: BoxShape.circle,
@@ -624,8 +680,7 @@ class _EditQuizPageState extends State<EditQuizPage> {
                 ),
               );
             }),
-
-            // Correct answer indicator
+            // ✨ Hiển thị đáp án đúng
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -638,7 +693,7 @@ class _EditQuizPageState extends State<EditQuizPage> {
                   const Icon(Icons.check_circle, color: Colors.green, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Đáp án đúng: ${question['correctAnswer']}',
+                    'Đáp án đúng: ${question['correctAnswer'] is List ? (question['correctAnswer'] as List).join(", ") : question['correctAnswer']}',
                     style: const TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,

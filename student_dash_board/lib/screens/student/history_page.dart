@@ -1,4 +1,4 @@
-// lib/screens/student/history_page.dart
+// lib/screens/student/history_page.dart (FIXED - Multiple choice answer display)
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -6,11 +6,8 @@ class HistoryPage extends StatefulWidget {
   final String studentId;
   final String classId;
 
-  const HistoryPage({
-    Key? key,
-    required this.studentId,
-    required this.classId,
-  }) : super(key: key);
+  const HistoryPage({Key? key, required this.studentId, required this.classId})
+    : super(key: key);
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -21,7 +18,7 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header (Giống Teacher Panel)
+        // Header
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -46,7 +43,11 @@ class _HistoryPageState extends State<HistoryPage> {
                   color: Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.history_edu_rounded, color: Colors.blue.shade700, size: 24),
+                child: Icon(
+                  Icons.history_edu_rounded,
+                  color: Colors.blue.shade700,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               const Column(
@@ -54,7 +55,11 @@ class _HistoryPageState extends State<HistoryPage> {
                 children: [
                   Text(
                     'Lịch sử bài thi',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   Text(
                     'Xem lại điểm số và chi tiết bài làm',
@@ -79,7 +84,9 @@ class _HistoryPageState extends State<HistoryPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.blue.shade600,
+                    ),
                   ),
                 );
               }
@@ -89,9 +96,16 @@ class _HistoryPageState extends State<HistoryPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline_rounded, size: 60, color: Colors.red.shade300),
+                      Icon(
+                        Icons.error_outline_rounded,
+                        size: 60,
+                        color: Colors.red.shade300,
+                      ),
                       const SizedBox(height: 16),
-                      Text('Đã xảy ra lỗi tải dữ liệu', style: TextStyle(color: Colors.grey[600])),
+                      Text(
+                        'Đã xảy ra lỗi tải dữ liệu',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
                     ],
                   ),
                 );
@@ -110,7 +124,6 @@ class _HistoryPageState extends State<HistoryPage> {
                   final doc = submissions[index];
                   final data = doc.data() as Map<String, dynamic>;
 
-                  // Tính toán hiển thị điểm số (Giống giáo viên)
                   final score = data['score'] ?? 0;
                   final total = data['totalQuestions'] ?? 1;
                   final percentage = (score / total * 100);
@@ -133,12 +146,13 @@ class _HistoryPageState extends State<HistoryPage> {
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
-                        onTap: () => _showSubmissionDetail(context, doc.id, data),
+                        onTap: () =>
+                            _showSubmissionDetail(context, doc.id, data),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              // Score Circle (Gradient giống giáo viên)
+                              // Score Circle
                               Container(
                                 width: 60,
                                 height: 60,
@@ -146,7 +160,10 @@ class _HistoryPageState extends State<HistoryPage> {
                                   gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
-                                    colors: [scoreColor.withOpacity(0.8), scoreColor],
+                                    colors: [
+                                      scoreColor.withOpacity(0.8),
+                                      scoreColor,
+                                    ],
                                   ),
                                   shape: BoxShape.circle,
                                   boxShadow: [
@@ -169,7 +186,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                       ),
                                     ),
                                     Text(
-                                      '$score/$total',
+                                      '${score is double ? score.toStringAsFixed(1) : score}/$total',
                                       style: TextStyle(
                                         color: Colors.white.withOpacity(0.9),
                                         fontSize: 10,
@@ -198,22 +215,36 @@ class _HistoryPageState extends State<HistoryPage> {
                                     const SizedBox(height: 6),
                                     Row(
                                       children: [
-                                        Icon(Icons.access_time_rounded, size: 14, color: Colors.grey[500]),
+                                        Icon(
+                                          Icons.access_time_rounded,
+                                          size: 14,
+                                          color: Colors.grey[500],
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           _formatDate(data['timestamp']),
-                                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     Row(
                                       children: [
-                                        Icon(Icons.timer_outlined, size: 14, color: Colors.grey[500]),
+                                        Icon(
+                                          Icons.timer_outlined,
+                                          size: 14,
+                                          color: Colors.grey[500],
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Thời gian làm: ${_formatDuration(data['timeSpent'] ?? 0)}',
-                                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -228,7 +259,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                   color: Colors.blue.shade50,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Icon(Icons.visibility_rounded, color: Colors.blue.shade700, size: 24),
+                                child: Icon(
+                                  Icons.visibility_rounded,
+                                  color: Colors.blue.shade700,
+                                  size: 24,
+                                ),
                               ),
                             ],
                           ),
@@ -256,12 +291,20 @@ class _HistoryPageState extends State<HistoryPage> {
               color: Colors.grey.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.shade300),
+            child: Icon(
+              Icons.history_toggle_off_rounded,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             'Bạn chưa làm bài thi nào',
-            style: TextStyle(fontSize: 16, color: Colors.grey[500], fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -291,10 +334,10 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _showSubmissionDetail(
-      BuildContext context,
-      String submissionId,
-      Map<String, dynamic> submission,
-      ) async {
+    BuildContext context,
+    String submissionId,
+    Map<String, dynamic> submission,
+  ) async {
     final quizId = submission['quizId'] as String?;
 
     if (quizId == null) return;
@@ -316,7 +359,8 @@ class _HistoryPageState extends State<HistoryPage> {
       if (!context.mounted) return;
       Navigator.pop(context); // Hide loading
 
-      final studentAnswers = submission['answers'] as Map<String, dynamic>? ?? {};
+      final studentAnswers =
+          submission['answers'] as Map<String, dynamic>? ?? {};
 
       showDialog(
         context: context,
@@ -328,14 +372,14 @@ class _HistoryPageState extends State<HistoryPage> {
       );
     } catch (e) {
       Navigator.pop(context); // Hide loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải đề thi: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi tải đề thi: $e')));
     }
   }
 }
 
-// Dialog chi tiết bài làm (Clone từ Teacher Panel)
+// Dialog chi tiết bài làm (FIXED)
 class _DetailDialog extends StatelessWidget {
   final Map<String, dynamic> submission;
   final List<QueryDocumentSnapshot> questions;
@@ -387,7 +431,11 @@ class _DetailDialog extends StatelessWidget {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.assignment_turned_in_rounded, color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.assignment_turned_in_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -405,7 +453,10 @@ class _DetailDialog extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           submission['quizTitle'] ?? 'N/A',
-                          style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -429,10 +480,26 @@ class _DetailDialog extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildStatItem(Icons.check_circle_rounded, '$score', 'Đúng', Colors.green),
-                  _buildStatItem(Icons.cancel_rounded, '${total - score}', 'Sai', Colors.red),
-                  _buildStatItem(Icons.timer_rounded, _formatTime(timeSpent), 'Thời gian', Colors.blue),
-                  _buildStatItem(Icons.grade_rounded, '${percentage.toStringAsFixed(1)}%', 'Điểm số', Colors.orange),
+                  _buildStatItem(
+                    Icons.grade_rounded,
+                    score is double
+                        ? score.toStringAsFixed(1)
+                        : score.toString(),
+                    'Số câu đúng',
+                    Colors.blue,
+                  ),
+                  _buildStatItem(
+                    Icons.timer_rounded,
+                    _formatTime(timeSpent),
+                    'Thời gian',
+                    Colors.orange,
+                  ),
+                  _buildStatItem(
+                    Icons.percent_rounded,
+                    '${percentage.toStringAsFixed(1)}%',
+                    'Phần trăm',
+                    Colors.green,
+                  ),
                 ],
               ),
             ),
@@ -444,11 +511,14 @@ class _DetailDialog extends StatelessWidget {
                 itemCount: questions.length,
                 itemBuilder: (context, index) {
                   final questionDoc = questions[index];
-                  final questionData = questionDoc.data() as Map<String, dynamic>;
+                  final questionData =
+                      questionDoc.data() as Map<String, dynamic>;
                   final questionId = questionDoc.id;
-                  final correctAnswer = questionData['correctAnswer'] ?? '';
-                  final studentAnswer = studentAnswers[questionId] ?? '';
-                  final isCorrect = studentAnswer == correctAnswer;
+                  final rawCorrect = questionData['correctAnswer'];
+                  final rawStudent = studentAnswers[questionId];
+
+                  // ✅ FIXED: Kiểm tra đúng/sai cho cả câu hỏi
+                  bool isCorrect = _checkAnswerCorrect(rawCorrect, rawStudent);
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 20),
@@ -456,12 +526,15 @@ class _DetailDialog extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isCorrect ? Colors.green.shade200 : Colors.red.shade200,
+                        color: isCorrect
+                            ? Colors.green.shade200
+                            : Colors.red.shade200,
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: (isCorrect ? Colors.green : Colors.red).withOpacity(0.05),
+                          color: (isCorrect ? Colors.green : Colors.red)
+                              .withOpacity(0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -474,7 +547,9 @@ class _DetailDialog extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
+                            color: isCorrect
+                                ? Colors.green.shade50
+                                : Colors.red.shade50,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(14),
                               topRight: Radius.circular(14),
@@ -483,16 +558,23 @@ class _DetailDialog extends StatelessWidget {
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isCorrect ? Colors.green.shade100 : Colors.red.shade100,
+                                  color: isCorrect
+                                      ? Colors.green.shade100
+                                      : Colors.red.shade100,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   'Câu ${index + 1}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: isCorrect ? Colors.green.shade800 : Colors.red.shade800,
+                                    color: isCorrect
+                                        ? Colors.green.shade800
+                                        : Colors.red.shade800,
                                   ),
                                 ),
                               ),
@@ -500,7 +582,10 @@ class _DetailDialog extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   questionData['question'],
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                             ],
@@ -508,76 +593,186 @@ class _DetailDialog extends StatelessWidget {
                         ),
 
                         // Options
+                        // Padding(
+                        //   padding: const EdgeInsets.all(16),
+                        //   child: Column(
+                        //     children: List.generate(4, (i) {
+                        //       final letter = String.fromCharCode(65 + i);
+                        //       final options = questionData['options'] as List;
+
+                        //       // ✅ FIXED: Kiểm tra từng option
+                        //       bool isCorrectOption = _isCorrectOption(
+                        //         rawCorrect,
+                        //         letter,
+                        //       );
+                        //       bool isStudentSelected = _isStudentSelected(
+                        //         rawStudent,
+                        //         letter,
+                        //       );
+
+                        //       Color bgColor = Colors.white;
+                        //       Color borderColor = Colors.grey.shade200;
+                        //       Color textColor = Colors.black87;
+                        //       IconData? icon;
+
+                        //       if (isCorrectOption) {
+                        //         // Đáp án đúng (luôn xanh)
+                        //         bgColor = Colors.green.shade50;
+                        //         borderColor = Colors.green.shade400;
+                        //         textColor = Colors.green.shade800;
+                        //         icon = Icons.check_circle_rounded;
+                        //       } else if (isStudentSelected) {
+                        //         // Học sinh chọn sai (đỏ)
+                        //         bgColor = Colors.red.shade50;
+                        //         borderColor = Colors.red.shade400;
+                        //         textColor = Colors.red.shade800;
+                        //         icon = Icons.cancel_rounded;
+                        //       }
+
+                        //       return Container(
+                        //         margin: const EdgeInsets.only(bottom: 8),
+                        //         padding: const EdgeInsets.all(12),
+                        //         decoration: BoxDecoration(
+                        //           color: bgColor,
+                        //           borderRadius: BorderRadius.circular(10),
+                        //           border: Border.all(color: borderColor),
+                        //         ),
+                        //         child: Row(
+                        //           children: [
+                        //             Container(
+                        //               width: 28,
+                        //               height: 28,
+                        //               decoration: BoxDecoration(
+                        //                 color: isCorrectOption
+                        //                     ? Colors.green
+                        //                     : (isStudentSelected
+                        //                           ? Colors.red
+                        //                           : Colors.grey.shade300),
+                        //                 shape: BoxShape.circle,
+                        //               ),
+                        //               child: Center(
+                        //                 child: Text(
+                        //                   letter,
+                        //                   style: TextStyle(
+                        //                     color:
+                        //                         isStudentSelected ||
+                        //                             isCorrectOption
+                        //                         ? Colors.white
+                        //                         : Colors.grey.shade700,
+                        //                     fontWeight: FontWeight.bold,
+                        //                   ),
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //             const SizedBox(width: 12),
+                        //             Expanded(
+                        //               child: Text(
+                        //                 options[i],
+                        //                 style: TextStyle(
+                        //                   color: textColor,
+                        //                   fontWeight: FontWeight.w500,
+                        //                 ),
+                        //               ),
+                        //             ),
+                        //             if (icon != null)
+                        //               Icon(icon, color: borderColor, size: 20),
+                        //           ],
+                        //         ),
+                        //       );
+                        //     }),
+                        //   ),
+                        // ),
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
-                            children: List.generate(4, (i) {
-                              final letter = String.fromCharCode(65 + i);
+                            children: () {
                               final options = questionData['options'] as List;
-                              final isCorrectOption = letter == correctAnswer;
-                              final isStudentChoice = letter == studentAnswer;
 
-                              Color bgColor = Colors.white;
-                              Color borderColor = Colors.grey.shade200;
-                              Color textColor = Colors.black87;
-                              IconData? icon;
+                              return List.generate(options.length, (i) {
+                                final letter = String.fromCharCode(65 + i);
 
-                              if (isCorrectOption) {
-                                bgColor = Colors.green.shade50;
-                                borderColor = Colors.green.shade400;
-                                textColor = Colors.green.shade800;
-                                icon = Icons.check_circle_rounded;
-                              } else if (isStudentChoice && !isCorrect) {
-                                bgColor = Colors.red.shade50;
-                                borderColor = Colors.red.shade400;
-                                textColor = Colors.red.shade800;
-                                icon = Icons.cancel_rounded;
-                              } else if (isStudentChoice) {
-                                bgColor = Colors.green.shade50;
-                                borderColor = Colors.green.shade400;
-                              }
+                                bool isCorrectOption = _isCorrectOption(
+                                  rawCorrect,
+                                  letter,
+                                );
+                                bool isStudentSelected = _isStudentSelected(
+                                  rawStudent,
+                                  letter,
+                                );
 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: bgColor,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: borderColor),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: isCorrectOption
-                                            ? Colors.green
-                                            : (isStudentChoice ? Colors.red : Colors.grey.shade300),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          letter,
-                                          style: TextStyle(
-                                            color: isStudentChoice || isCorrectOption ? Colors.white : Colors.grey.shade700,
-                                            fontWeight: FontWeight.bold,
+                                Color bgColor = Colors.white;
+                                Color borderColor = Colors.grey.shade200;
+                                Color textColor = Colors.black87;
+                                IconData? icon;
+
+                                if (isCorrectOption) {
+                                  bgColor = Colors.green.shade50;
+                                  borderColor = Colors.green.shade400;
+                                  textColor = Colors.green.shade800;
+                                  icon = Icons.check_circle_rounded;
+                                } else if (isStudentSelected) {
+                                  bgColor = Colors.red.shade50;
+                                  borderColor = Colors.red.shade400;
+                                  textColor = Colors.red.shade800;
+                                  icon = Icons.cancel_rounded;
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: borderColor),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: isCorrectOption
+                                              ? Colors.green
+                                              : (isStudentSelected
+                                                    ? Colors.red
+                                                    : Colors.grey.shade300),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            letter,
+                                            style: TextStyle(
+                                              color:
+                                                  isStudentSelected ||
+                                                      isCorrectOption
+                                                  ? Colors.white
+                                                  : Colors.grey.shade700,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        options[i],
-                                        style: TextStyle(color: textColor, fontWeight: FontWeight.w500),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          options[i],
+                                          style: TextStyle(
+                                            color: textColor,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                    if (icon != null) Icon(icon, color: borderColor, size: 20),
-                                  ],
-                                ),
-                              );
-                            }),
+                                      if (icon != null)
+                                        Icon(
+                                          icon,
+                                          color: borderColor,
+                                          size: 20,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              });
+                            }(),
                           ),
                         ),
                       ],
@@ -592,7 +787,47 @@ class _DetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label, Color color) {
+  // ✅ HELPER: Kiểm tra câu trả lời có đúng không
+  bool _checkAnswerCorrect(dynamic correct, dynamic student) {
+    if (student == null) return false;
+
+    if (correct is List) {
+      if (student is! List) return false;
+      final correctSet = Set.from(correct.map((e) => e.toString()));
+      final studentSet = Set.from(student.map((e) => e.toString()));
+      return correctSet.length == studentSet.length &&
+          correctSet.containsAll(studentSet);
+    } else {
+      return student.toString() == correct.toString();
+    }
+  }
+
+  // ✅ HELPER: Kiểm tra option có phải đáp án đúng không
+  bool _isCorrectOption(dynamic correct, String letter) {
+    if (correct is List) {
+      return correct.map((e) => e.toString()).contains(letter);
+    } else {
+      return correct.toString() == letter;
+    }
+  }
+
+  // ✅ HELPER: Kiểm tra học sinh có chọn option này không
+  bool _isStudentSelected(dynamic student, String letter) {
+    if (student == null) return false;
+
+    if (student is List) {
+      return student.map((e) => e.toString()).contains(letter);
+    } else {
+      return student.toString() == letter;
+    }
+  }
+
+  Widget _buildStatItem(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+  ) {
     return Column(
       children: [
         Container(
@@ -606,7 +841,11 @@ class _DetailDialog extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
         Text(
           label,

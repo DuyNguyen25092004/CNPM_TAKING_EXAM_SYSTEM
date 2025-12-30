@@ -175,19 +175,35 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
                                   ),
                                 ),
                                 child: const Text(
-                                  'File PDF hoặc TXT phải có định dạng:\n\n'
-                                  'Câu 1: Thủ đô Việt Nam là?\n'
+                                  'File PDF hoặc TXT phải có định dạng như các câu hỏi sau:\n'
+                                  'Câu 1: 2 là số chẵn hay lẻ? (Câu hỏi đúng sai)\n'
+                                  'A. Đúng\n'
+                                  'B. Sai\n'
+                                  'Đáp án: A\n\n'
+                                  'Câu 2: Ai là cầu thủ xuất sắc nhất thế giới? (Câu hỏi 3 đáp án)\n'
+                                  'A. Ronaldo\n'
+                                  'B. Messi\n'
+                                  'C. Cả hai\n'
+                                  'Đáp án: C\n\n'
+                                  'Câu 3: Thủ đô Việt Nam là? (Câu hỏi 4 đáp án)\n'
                                   'A. Hà Nội\n'
                                   'B. Đà Nẵng\n'
                                   'C. TP.HCM\n'
                                   'D. Hải Phòng\n'
                                   'Đáp án: A\n\n'
-                                  'Câu 2: 2 + 2 = ?\n'
-                                  'A. 2\n'
-                                  'B. 3\n'
-                                  'C. 4\n'
-                                  'D. 5\n'
-                                  'Đáp án: C',
+                                  'Câu 3: Những màu nào sau đây là màu nóng? (Câu hỏi nhiều đáp án)\n'
+                                  'A. Đỏ\n'
+                                  'B. Xanh lá\n'
+                                  'C. Vàng\n'
+                                  'D. Xanh dương\n'
+                                  'E. Cam\n'
+                                  'F. Tím\n'
+                                  'Đáp án: A, C, E\n\n'
+                                  'Lưu ý:\n'
+                                  '- Mỗi câu hỏi bắt đầu bằng "Câu X:"\n'
+                                  '- Đáp án đúng bắt đầu bằng "Đáp án:"\n'
+                                  '- Hỗ trợ cả dấu chấm (.) và dấu hai chấm (:) sau số câu và chữ đáp án.\n'
+                                  '- Đối với câu hỏi nhiều đáp án, các đáp án đúng cách nhau bằng dấu phẩy.\n',
                                   style: TextStyle(
                                     fontSize: 14,
                                     height: 1.5,
@@ -603,6 +619,26 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
         await quizRef.collection('questions').add(question);
       }
 
+      setState(() => _uploadProgress = 1.0);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text(
+                  'Thành công! Đã thêm ${questions.length} câu hỏi vào ngân hàng.',
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+          ),
+        );
+        Navigator.pop(context);
+      }
+
       // ... (Phần logic assign class nếu là trang class_create_quiz) ...
       // Nếu là trang class_create_quiz_page, nhớ giữ lại đoạn logic gán vào class nhé!
       // Ví dụ đoạn này (CHỈ DÀNH CHO class_create_quiz_page.dart):
@@ -617,24 +653,6 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
           // update count...
       }
       */
-
-      setState(() => _uploadProgress = 1.0);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 12),
-                Text('Thành công! Đã thêm ${questions.length} câu hỏi.'),
-              ],
-            ),
-            backgroundColor: Colors.green.shade600,
-          ),
-        );
-        Navigator.pop(context);
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -728,27 +746,356 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
   // --- BẮT ĐẦU: XÓA hàm _parseQuestions CŨ và DÁN 2 hàm MỚI vào đây ---
 
   // 1. Hàm mới: Tự động sửa lỗi format
-  // 1. Hàm chuẩn hóa: Mở rộng để nhận diện thêm đáp án E
+  // String _standardizeQuizContent(String content) {
+  //   // Chuẩn hóa tiêu đề
+  //   content = content.replaceAllMapped(
+  //     RegExp(
+  //       r'(?:^|\n)\s*(?:Câu|Bài|Question|Q)\s*(\d+)\s*[:.)]?\s*',
+  //       caseSensitive: false,
+  //     ),
+  //     (match) => '\nCâu ${match.group(1)}: ',
+  //   );
+
+  //   // ✨ HỖ TRỢ A-J (10 đáp án)
+  //   content = content.replaceAllMapped(
+  //     RegExp(r'(?:^|\n)\s*([a-jA-J])\s*[:.)]\s+', caseSensitive: false),
+  //     (match) => '\n${match.group(1)!.toUpperCase()}. ',
+  //   );
+
+  //   // ✨ HỖ TRỢ ĐÁP ÁN A-J và nhiều đáp án (A, C, E)
+  //   content = content.replaceAllMapped(
+  //     RegExp(
+  //       r'(?:^|\n)\s*(?:Đáp\s*án|DA|Answer|Result|KQ|ĐA)\s*[:.]?\s*([A-J,\s]+)',
+  //       caseSensitive: false,
+  //     ),
+  //     (match) => '\nĐáp án: ${match.group(1)!.toUpperCase()}',
+  //   );
+
+  //   return content;
+  // }
+
+  // // 2. Hàm Parse: Chấp nhận đáp án thứ 4 là D hoặc E
+  // // Hàm này trả về Map gồm: 'questions' (list data) và 'errors' (list string)
+  // Map<String, dynamic> _parseQuestions(String content) {
+  //   List<Map<String, dynamic>> questions = [];
+  //   List<String> errors = [];
+
+  //   // Xử lý xuống dòng & Unicode
+  //   content = content.replaceAll('\r\n', '@@NEWLINE@@');
+  //   content = content.replaceAll('\r', '@@NEWLINE@@');
+  //   content = content.replaceAll('\n', '@@NEWLINE@@');
+  //   content = content.replaceAll(RegExp(r'(?<![a-zA-Z\s])@@NEWLINE@@'), '');
+  //   content = content.replaceAll(RegExp(r'@@NEWLINE@@(?![a-zA-Z\s])'), '');
+  //   content = content.replaceAll('@@NEWLINE@@', '\n');
+  //   content = unorm.nfc(content);
+  //   content = content.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+
+  //   // Chuẩn hóa
+  //   content = _standardizeQuizContent(content);
+  //   content = content.replaceAll(RegExp(r'[ \t]+'), ' ');
+  //   content = content.trim();
+
+  //   // Tách khối câu hỏi
+  //   final parts = content.split(RegExp(r'(?=Câu\s+\d+:)'));
+
+  //   for (var block in parts) {
+  //     block = block.trim();
+  //     if (block.isEmpty) continue;
+
+  //     bool matched = false;
+
+  //     // ✨ THỬ CÁC PATTERN TỪ 10 -> 4 ĐÁP ÁN
+
+  //     // 10 đáp án (A-J)
+  //     var match = RegExp(
+  //       r'Câu\s+(\d+):\s*(.+?)\s+'
+  //       r'A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+'
+  //       r'E\.\s+(.+?)\s+F\.\s+(.+?)\s+G\.\s+(.+?)\s+H\.\s+(.+?)\s+'
+  //       r'I\.\s+(.+?)\s+J\.\s+(.+?)\s+'
+  //       r'Đáp\s*án:\s*([A-J,\s]+)',
+  //       caseSensitive: false,
+  //       dotAll: true,
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       final answerStr = match.group(13)!.trim().toUpperCase();
+  //       final answerList = answerStr
+  //           .split(',')
+  //           .map((e) => e.trim())
+  //           .where((e) => e.isNotEmpty)
+  //           .toList();
+
+  //       questions.add({
+  //         'question': match.group(2)!.trim(),
+  //         'options': [
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //           match.group(6)!.trim(),
+  //           match.group(7)!.trim(),
+  //           match.group(8)!.trim(),
+  //           match.group(9)!.trim(),
+  //           match.group(10)!.trim(),
+  //           match.group(11)!.trim(),
+  //           match.group(12)!.trim(),
+  //         ],
+  //         'correctAnswer': answerList.length > 1 ? answerList : answerList[0],
+  //         'type': answerList.length > 1 ? 'multiple' : 'single',
+  //       });
+  //       continue;
+  //     }
+
+  //     // 9 đáp án (A-I)
+  //     match = RegExp(
+  //       r'Câu\s+(\d+):\s*(.+?)\s+'
+  //       r'A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+'
+  //       r'E\.\s+(.+?)\s+F\.\s+(.+?)\s+G\.\s+(.+?)\s+H\.\s+(.+?)\s+'
+  //       r'I\.\s+(.+?)\s+'
+  //       r'Đáp\s*án:\s*([A-I,\s]+)',
+  //       caseSensitive: false,
+  //       dotAll: true,
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       final answerStr = match.group(11)!.trim().toUpperCase();
+  //       final answerList = answerStr
+  //           .split(',')
+  //           .map((e) => e.trim())
+  //           .where((e) => e.isNotEmpty)
+  //           .toList();
+
+  //       questions.add({
+  //         'question': match.group(2)!.trim(),
+  //         'options': [
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //           match.group(6)!.trim(),
+  //           match.group(7)!.trim(),
+  //           match.group(8)!.trim(),
+  //           match.group(9)!.trim(),
+  //           match.group(10)!.trim(),
+  //         ],
+  //         'correctAnswer': answerList.length > 1 ? answerList : answerList[0],
+  //         'type': answerList.length > 1 ? 'multiple' : 'single',
+  //       });
+  //       continue;
+  //     }
+
+  //     // 8 đáp án (A-H)
+  //     match = RegExp(
+  //       r'Câu\s+(\d+):\s*(.+?)\s+'
+  //       r'A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+'
+  //       r'E\.\s+(.+?)\s+F\.\s+(.+?)\s+G\.\s+(.+?)\s+H\.\s+(.+?)\s+'
+  //       r'Đáp\s*án:\s*([A-H,\s]+)',
+  //       caseSensitive: false,
+  //       dotAll: true,
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       final answerStr = match.group(10)!.trim().toUpperCase();
+  //       final answerList = answerStr
+  //           .split(',')
+  //           .map((e) => e.trim())
+  //           .where((e) => e.isNotEmpty)
+  //           .toList();
+
+  //       questions.add({
+  //         'question': match.group(2)!.trim(),
+  //         'options': [
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //           match.group(6)!.trim(),
+  //           match.group(7)!.trim(),
+  //           match.group(8)!.trim(),
+  //           match.group(9)!.trim(),
+  //         ],
+  //         'correctAnswer': answerList.length > 1 ? answerList : answerList[0],
+  //         'type': answerList.length > 1 ? 'multiple' : 'single',
+  //       });
+  //       continue;
+  //     }
+
+  //     // 7 đáp án (A-G)
+  //     match = RegExp(
+  //       r'Câu\s+(\d+):\s*(.+?)\s+'
+  //       r'A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+'
+  //       r'E\.\s+(.+?)\s+F\.\s+(.+?)\s+G\.\s+(.+?)\s+'
+  //       r'Đáp\s*án:\s*([A-G,\s]+)',
+  //       caseSensitive: false,
+  //       dotAll: true,
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       final answerStr = match.group(9)!.trim().toUpperCase();
+  //       final answerList = answerStr
+  //           .split(',')
+  //           .map((e) => e.trim())
+  //           .where((e) => e.isNotEmpty)
+  //           .toList();
+
+  //       questions.add({
+  //         'question': match.group(2)!.trim(),
+  //         'options': [
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //           match.group(6)!.trim(),
+  //           match.group(7)!.trim(),
+  //           match.group(8)!.trim(),
+  //         ],
+  //         'correctAnswer': answerList.length > 1 ? answerList : answerList[0],
+  //         'type': answerList.length > 1 ? 'multiple' : 'single',
+  //       });
+  //       continue;
+  //     }
+
+  //     // 6 đáp án (A-F)
+  //     match = RegExp(
+  //       r'Câu\s+(\d+):\s*(.+?)\s+'
+  //       r'A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+'
+  //       r'E\.\s+(.+?)\s+F\.\s+(.+?)\s+'
+  //       r'Đáp\s*án:\s*([A-F,\s]+)',
+  //       caseSensitive: false,
+  //       dotAll: true,
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       final answerStr = match.group(8)!.trim().toUpperCase();
+  //       final answerList = answerStr
+  //           .split(',')
+  //           .map((e) => e.trim())
+  //           .where((e) => e.isNotEmpty)
+  //           .toList();
+
+  //       questions.add({
+  //         'question': match.group(2)!.trim(),
+  //         'options': [
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //           match.group(6)!.trim(),
+  //           match.group(7)!.trim(),
+  //         ],
+  //         'correctAnswer': answerList.length > 1 ? answerList : answerList[0],
+  //         'type': answerList.length > 1 ? 'multiple' : 'single',
+  //       });
+  //       continue;
+  //     }
+
+  //     // 5 đáp án (A-E)
+  //     match = RegExp(
+  //       r'Câu\s+(\d+):\s*(.+?)\s+'
+  //       r'A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+E\.\s+(.+?)\s+'
+  //       r'Đáp\s*án:\s*([A-E,\s]+)',
+  //       caseSensitive: false,
+  //       dotAll: true,
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       final answerStr = match.group(8)!.trim().toUpperCase();
+  //       final answerList = answerStr
+  //           .split(',')
+  //           .map((e) => e.trim())
+  //           .where((e) => e.isNotEmpty)
+  //           .toList();
+
+  //       questions.add({
+  //         'question': match.group(2)!.trim(),
+  //         'options': [
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //           match.group(6)!.trim(),
+  //           match.group(7)!.trim(),
+  //         ],
+  //         'correctAnswer': answerList.length > 1 ? answerList : answerList[0],
+  //         'type': answerList.length > 1 ? 'multiple' : 'single',
+  //       });
+  //       continue;
+  //     }
+
+  //     // ✅ 4 đáp án (A-D) - TRẮC NGHIỆM CỨNG
+  //     match = RegExp(
+  //       r'Câu\s+(\d+):\s*(.+?)\s+'
+  //       r'A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+D\.\s+(.+?)\s+'
+  //       r'Đáp\s*án:\s*([A-D])',
+  //       caseSensitive: false,
+  //       dotAll: true,
+  //     ).firstMatch(block);
+
+  //     if (match != null) {
+  //       questions.add({
+  //         'question': match.group(2)!.trim(),
+  //         'options': [
+  //           match.group(3)!.trim(),
+  //           match.group(4)!.trim(),
+  //           match.group(5)!.trim(),
+  //           match.group(6)!.trim(),
+  //         ],
+  //         'correctAnswer': match.group(7)!.trim().toUpperCase(),
+  //         'type': 'single',
+  //       });
+  //       continue;
+  //     }
+
+  //     // ❌ Không match được -> Báo lỗi
+  //     final cauMatch = RegExp(r'Câu\s+(\d+):').firstMatch(block);
+  //     String prefix = cauMatch != null
+  //         ? "Câu ${cauMatch.group(1)}"
+  //         : "Một câu hỏi";
+
+  //     List<String> missingParts = [];
+  //     if (!block.contains(RegExp(r'A\.', caseSensitive: false)))
+  //       missingParts.add("A");
+  //     if (!block.contains(RegExp(r'B\.', caseSensitive: false)))
+  //       missingParts.add("B");
+  //     if (!block.contains(RegExp(r'C\.', caseSensitive: false)))
+  //       missingParts.add("C");
+  //     if (!block.contains(RegExp(r'D\.', caseSensitive: false)))
+  //       missingParts.add("D");
+  //     if (!block.contains(RegExp(r'Đáp\s*án:', caseSensitive: false)))
+  //       missingParts.add("Đáp án");
+
+  //     String errorMsg = missingParts.isNotEmpty
+  //         ? "$prefix bị lỗi định dạng. Thiếu: ${missingParts.join(', ')}."
+  //         : "$prefix bị lỗi định dạng. Kiểm tra lại xuống dòng hoặc thứ tự đáp án.";
+
+  //     String snippet = block.length > 80
+  //         ? block.substring(0, 80).replaceAll('\n', ' ') + "..."
+  //         : block.replaceAll('\n', ' ');
+  //     errors.add("$errorMsg\n(Nội dung: $snippet)");
+  //   }
+
+  //   return {'questions': questions, 'errors': errors};
+  // }
+
+  // --- BẮT ĐẦU PHẦN CODE MỚI ---
+
+  /// Hàm chuẩn hóa nội dung file trước khi xử lý
   String _standardizeQuizContent(String content) {
-    // Chuẩn hóa tiêu đề (Giữ nguyên)
+    // 1. Thêm xuống dòng trước các từ khóa "Câu X:", "Bài X:" để tách khối
     content = content.replaceAllMapped(
       RegExp(
         r'(?:^|\n)\s*(?:Câu|Bài|Question|Q)\s*(\d+)\s*[:.)]?\s*',
         caseSensitive: false,
       ),
-      (match) => '\nCâu ${match.group(1)}: ',
+      (match) => '\n@@BLOCK_START@@Câu ${match.group(1)}: ',
     );
 
-    // SỬA Ở ĐÂY: Thay [a-dA-D] thành [a-eA-E] để nhận diện cả A, B, C, D, E
+    // 2. Chuẩn hóa các đáp án (A. B. C. D. ...) thành format "A. "
+    // Hỗ trợ: A. | A: | A) | a.
     content = content.replaceAllMapped(
-      RegExp(r'(?:^|\n)\s*([a-eA-E])\s*[:.)]\s+', caseSensitive: false),
+      RegExp(r'(?:^|\n)\s*([A-Z])\s*[:.)]\s+', caseSensitive: false),
       (match) => '\n${match.group(1)!.toUpperCase()}. ',
     );
 
-    // SỬA Ở ĐÂY: Thay [A-D] thành [A-E] để nhận diện đáp án đúng là E
+    // 3. Chuẩn hóa dòng đáp án
+    // Hỗ trợ: Đáp án: | DA: | Ans: | Result: | ĐA:
     content = content.replaceAllMapped(
       RegExp(
-        r'(?:^|\n)\s*(?:Đáp\s*án|DA|Answer|Result|KQ|ĐA)\s*[:.]?\s*([A-E])',
+        r'(?:^|\n)\s*(?:Đáp\s*án|DA|Answer|Result|KQ|ĐA)\s*[:.]?\s*([A-Z0-9\s,]+)',
         caseSensitive: false,
       ),
       (match) => '\nĐáp án: ${match.group(1)!.toUpperCase()}',
@@ -757,97 +1104,128 @@ class _QuizBankCreatePageState extends State<QuizBankCreatePage> {
     return content;
   }
 
-  // 2. Hàm Parse: Chấp nhận đáp án thứ 4 là D hoặc E
-  // Hàm này trả về Map gồm: 'questions' (list data) và 'errors' (list string)
+  /// Hàm phân tích câu hỏi động (Dynamic Parsing)
   Map<String, dynamic> _parseQuestions(String content) {
     List<Map<String, dynamic>> questions = [];
     List<String> errors = [];
 
-    // --- 1. Xử lý xuống dòng & Unicode (Giữ nguyên của bạn) ---
-    content = content.replaceAll('\r\n', '@@NEWLINE@@');
-    content = content.replaceAll('\r', '@@NEWLINE@@');
-    content = content.replaceAll('\n', '@@NEWLINE@@');
-    content = content.replaceAll(RegExp(r'(?<![a-zA-Z\s])@@NEWLINE@@'), '');
-    content = content.replaceAll(RegExp(r'@@NEWLINE@@(?![a-zA-Z\s])'), '');
-    content = content.replaceAll('@@NEWLINE@@', '\n');
-    content = unorm.nfc(content);
-    content = content.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
+    try {
+      // BƯỚC 1: Xử lý sơ bộ văn bản (Unicode, Newline)
+      content = content.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+      content = unorm.nfc(content); // Chuẩn hóa tiếng Việt
 
-    // --- 2. Chuẩn hóa (Giữ nguyên của bạn) ---
-    content = _standardizeQuizContent(content);
+      // BƯỚC 2: Chuẩn hóa format chung
+      content = _standardizeQuizContent(content);
 
-    content = content.replaceAll(RegExp(r'[ \t]+'), ' ');
-    content = content.trim();
+      // Xóa các ký tự điều khiển lạ
+      content = content.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '');
 
-    // --- 3. Tách khối câu hỏi ---
-    // Tách dựa trên "Câu X:" nhưng giữ lại phần tách
-    final parts = content.split(RegExp(r'(?=Câu\s+\d+:)'));
+      // BƯỚC 3: Tách các câu hỏi dựa trên marker @@BLOCK_START@@ đã thêm ở bước chuẩn hóa
+      final blocks = content.split('@@BLOCK_START@@');
 
-    for (var block in parts) {
-      block = block.trim();
-      if (block.isEmpty) continue;
+      for (var block in blocks) {
+        block = block.trim();
+        if (block.isEmpty) continue; // Bỏ qua block rỗng đầu tiên
 
-      // Regex chính xác của bạn
-      final match = RegExp(
-        r'Câu\s+(\d+):\s*(.+?)\s+A\.\s+(.+?)\s+B\.\s+(.+?)\s+C\.\s+(.+?)\s+(?:D|E)\.\s+(.+?)\s+Đáp\s*án:\s*([A-E])',
-        caseSensitive: false,
-        dotAll: true,
-      ).firstMatch(block);
+        // -- BẮT ĐẦU XỬ LÝ TỪNG CÂU --
 
-      if (match != null) {
-        // --- TRƯỜNG HỢP ĐÚNG ---
-        questions.add({
-          'question': match.group(2)!.trim(),
-          'options': [
-            match.group(3)!.trim(),
-            match.group(4)!.trim(),
-            match.group(5)!.trim(),
-            match.group(6)!.trim(),
-          ],
-          'correctAnswer': match.group(7)!.trim().toUpperCase(),
-        });
-      } else {
-        // --- TRƯỜNG HỢP SAI FORMAT (Phân tích lỗi) ---
+        // 1. Tách nội dung câu hỏi (Từ đầu cho đến khi gặp đáp án A.)
+        // Regex tìm điểm bắt đầu của đáp án đầu tiên (A.)
+        final questionMatch = RegExp(
+          r'^(.*?)(\n[A-Z]\.\s+)',
+          dotAll: true,
+        ).firstMatch(block);
 
-        // Lấy số thứ tự câu để báo lỗi
-        final cauMatch = RegExp(r'Câu\s+(\d+):').firstMatch(block);
-        String prefix = cauMatch != null
-            ? "Câu ${cauMatch.group(1)}"
-            : "Một câu hỏi";
-
-        List<String> missingParts = [];
-
-        // Kiểm tra thiếu cái gì
-        if (!block.contains(RegExp(r'A\.', caseSensitive: false)))
-          missingParts.add("A");
-        if (!block.contains(RegExp(r'B\.', caseSensitive: false)))
-          missingParts.add("B");
-        if (!block.contains(RegExp(r'C\.', caseSensitive: false)))
-          missingParts.add("C");
-        if (!block.contains(RegExp(r'(?:D|E)\.', caseSensitive: false)))
-          missingParts.add("D/E");
-        if (!block.contains(RegExp(r'Đáp\s*án:', caseSensitive: false)))
-          missingParts.add("Đáp án");
-
-        String errorMsg;
-        if (missingParts.isNotEmpty) {
-          errorMsg =
-              "$prefix bị lỗi định dạng. Thiếu: ${missingParts.join(', ')}.";
-        } else {
-          errorMsg =
-              "$prefix bị lỗi định dạng. Kiểm tra lại xuống dòng hoặc thứ tự A,B,C,D.";
+        if (questionMatch == null) {
+          // Nếu không tìm thấy đáp án A nào -> Lỗi định dạng hoặc text rác
+          if (block.contains('Câu') && block.length < 50)
+            continue; // Bỏ qua header ngắn
+          errors.add(
+            "Không tìm thấy các lựa chọn (A, B...) cho: \"${block.split('\n')[0]}\"",
+          );
+          continue;
         }
 
-        // Thêm trích đoạn ngắn để dễ tìm
-        String snippet = block.length > 50
-            ? block.substring(0, 50).replaceAll('\n', ' ') + "..."
-            : block.replaceAll('\n', ' ');
-        errors.add("$errorMsg\n(Nội dung: $snippet)");
+        String questionText = questionMatch.group(1)!.trim();
+        // Loại bỏ prefix "Câu X:" trong nội dung câu hỏi để đẹp hơn
+        questionText = questionText.replaceAll(
+          RegExp(r'^Câu\s+\d+:\s*', caseSensitive: false),
+          '',
+        );
+
+        // 2. Tìm tất cả các đáp án (A. ..., B. ...)
+        List<String> options = [];
+        List<String> optionKeys = []; // Lưu lại A, B, C để đối chiếu
+
+        // Regex này tìm: (Xuống dòng)(Chữ cái)(Chấm)(Nội dung)(Dừng lại trước chữ cái tiếp theo hoặc dòng Đáp án)
+        final optionMatches = RegExp(
+          r'\n([A-Z])\.\s+(.*?)(?=\n[A-Z]\.\s+|\nĐáp án:|$)',
+          dotAll: true,
+        ).allMatches(block);
+
+        for (var match in optionMatches) {
+          optionKeys.add(match.group(1)!); // A, B, C...
+          options.add(match.group(2)!.trim()); // Nội dung đáp án
+        }
+
+        if (options.length < 2) {
+          errors.add(
+            "Câu hỏi \"${questionText.substring(0, 20)}...\" có ít hơn 2 đáp án.",
+          );
+          continue;
+        }
+
+        // 3. Tìm đáp án đúng
+        final answerMatch = RegExp(
+          r'\nĐáp án:\s*([A-Z\s,]+)',
+        ).firstMatch(block);
+
+        if (answerMatch == null) {
+          errors.add(
+            "Câu hỏi \"${questionText.substring(0, 20)}...\" thiếu dòng 'Đáp án:'.",
+          );
+          continue;
+        }
+
+        // Xử lý chuỗi đáp án (VD: "A, C" hoặc "A C" hoặc "A")
+        String rawAnswer = answerMatch.group(1)!;
+        List<String> correctAnswers = rawAnswer
+            .split(RegExp(r'[,\s]+')) // Tách bằng dấu phẩy hoặc khoảng trắng
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+
+        // Validate đáp án có nằm trong danh sách option không
+        bool isValidAnswer = true;
+        for (var ans in correctAnswers) {
+          if (!optionKeys.contains(ans)) {
+            errors.add(
+              "Câu hỏi \"${questionText.substring(0, 20)}...\" có đáp án '$ans' không nằm trong các lựa chọn (${optionKeys.join(', ')}).",
+            );
+            isValidAnswer = false;
+            break;
+          }
+        }
+        if (!isValidAnswer) continue;
+
+        // 4. Đóng gói kết quả
+        questions.add({
+          'question': questionText,
+          'options': options,
+          // Nếu có nhiều đáp án đúng -> lưu List<String>, nếu 1 -> lưu String
+          'correctAnswer': correctAnswers.length > 1
+              ? correctAnswers
+              : correctAnswers.first,
+          'type': correctAnswers.length > 1 ? 'multiple' : 'single',
+        });
       }
+    } catch (e) {
+      errors.add("Lỗi hệ thống khi phân tích file: $e");
     }
 
     return {'questions': questions, 'errors': errors};
   }
 
+  // --- KẾT THÚC CODE MỚI ---
   // --- KẾT THÚC ---
 } // <--- Dấu ngoặc đó

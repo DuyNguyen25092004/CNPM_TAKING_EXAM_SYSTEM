@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'manage_classes_page.dart';
 import 'quiz_bank_page.dart';
+import 'quiz_bank_list_page.dart'; // ✨ THÊM IMPORT
 import '../auth/login_page.dart';
 
 class TeacherPanel extends StatefulWidget {
@@ -16,11 +17,14 @@ class _TeacherPanelState extends State<TeacherPanel> {
   int _selectedIndex = 0;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // ✨ THÊM QuizBankListPage VÀO DANH SÁCH
   final List<Widget> _pages = const [
     ManageClassesPage(),
     QuizBankPage(),
+    QuizBankListPage(), // ✨ TAB MỚI
   ];
 
+  // ✨ THÊM NAVIGATION DESTINATION CHO TAB MỚI
   final List<NavigationDestination> _destinations = const [
     NavigationDestination(
       icon: Icon(Icons.class_outlined),
@@ -31,6 +35,11 @@ class _TeacherPanelState extends State<TeacherPanel> {
       icon: Icon(Icons.library_books_outlined),
       selectedIcon: Icon(Icons.library_books),
       label: 'Kho đề thi',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.folder_special_outlined), // ✨ ICON MỚI
+      selectedIcon: Icon(Icons.folder_special), // ✨ ICON MỚI
+      label: 'Ngân hàng câu hỏi', // ✨ LABEL MỚI
     ),
   ];
 
@@ -45,10 +54,7 @@ class _TeacherPanelState extends State<TeacherPanel> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Colors.orange.shade50,
-                Colors.white,
-              ],
+              colors: [Colors.orange.shade50, Colors.white],
             ),
             borderRadius: BorderRadius.circular(24),
           ),
@@ -94,7 +100,10 @@ class _TeacherPanelState extends State<TeacherPanel> {
                       onPressed: () => Navigator.pop(context, false),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                        side: BorderSide(
+                          color: Colors.grey.shade300,
+                          width: 1.5,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -145,7 +154,7 @@ class _TeacherPanelState extends State<TeacherPanel> {
         if (mounted) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
+            (route) => false,
           );
         }
       } catch (e) {
@@ -181,11 +190,7 @@ class _TeacherPanelState extends State<TeacherPanel> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade50,
-              Colors.white,
-              Colors.purple.shade50,
-            ],
+            colors: [Colors.blue.shade50, Colors.white, Colors.purple.shade50],
           ),
         ),
         child: SafeArea(
@@ -193,7 +198,10 @@ class _TeacherPanelState extends State<TeacherPanel> {
             children: [
               // Custom App Bar
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
@@ -272,9 +280,7 @@ class _TeacherPanelState extends State<TeacherPanel> {
               ),
 
               // Content
-              Expanded(
-                child: _pages[_selectedIndex],
-              ),
+              Expanded(child: _pages[_selectedIndex]),
             ],
           ),
         ),
